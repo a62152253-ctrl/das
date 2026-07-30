@@ -1,0 +1,8 @@
+{
+  "name": "Stwurz Auth",
+  "description": "Clean, modern authentication flow with login, register, and password recovery.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

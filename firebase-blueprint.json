@@ -1,0 +1,57 @@
+{
+  "project": "trim-approach-n5xj8",
+  "collections": [
+    {
+      "name": "users",
+      "documentId": "uid",
+      "schema": {
+        "email": "string",
+        "role": "string",
+        "name": "string",
+        "createdAt": "timestamp"
+      },
+      "readRules": [
+        {
+          "condition": "request.auth != null && request.auth.uid == uid",
+          "description": "Users can read their own profile"
+        }
+      ],
+      "writeRules": [
+        {
+          "condition": "request.auth != null && request.auth.uid == uid",
+          "description": "Users can write their own profile"
+        }
+      ]
+    },
+    {
+      "name": "companies",
+      "documentId": "uid",
+      "schema": {
+        "companyName": "string",
+        "nip": "string",
+        "description": "string",
+        "address": "string",
+        "city": "string",
+        "postalCode": "string",
+        "phone": "string",
+        "email": "string",
+        "services": "string",
+        "website": "string",
+        "socialLinks": "string",
+        "createdAt": "timestamp"
+      },
+      "readRules": [
+        {
+          "condition": "true",
+          "description": "Anyone can read company profiles"
+        }
+      ],
+      "writeRules": [
+        {
+          "condition": "request.auth != null && request.auth.uid == uid",
+          "description": "Users can only write to their own company profile"
+        }
+      ]
+    }
+  ]
+}
