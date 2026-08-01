@@ -1,59 +1,95 @@
 import { useState, useEffect } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { LoginForm } from './components/LoginForm';
 import { RegisterForm } from './components/RegisterForm';
 import { ForgotPasswordForm } from './components/ForgotPasswordForm';
-import { CompanyProfileForm } from './components/CompanyProfileForm';
-import { CompanyDashboard } from './components/CompanyDashboard';
-import { ClientDashboard } from './components/ClientDashboard';
+import { CompanyProfileForm } from './components/company/CompanyProfileForm';
+import { CompanyDashboard } from './components/company/CompanyDashboard';
+import { ClientDashboard } from './components/client/ClientDashboard';
 import { AdminDashboard } from './components/AdminDashboard';
-import { Navbar } from './components/Navbar';
+import { Navbar } from './components/common/Navbar';
 import { HomePage } from './components/HomePage';
-import { CompanyPublicProfile } from './components/CompanyPublicProfile';
-import { SearchBar } from './components/SearchBar';
+import { CompanyPublicProfile } from './components/company/CompanyPublicProfile';
+import { SearchBar } from './components/search/SearchBar';
 import { SearchResults } from './components/SearchResults';
 import { SearchMap } from './components/SearchMap';
 import { ToastContainer } from './components/ui/Toast';
-import { AuthView, Company } from './types';
-import { Sparkles, MapPin, Loader2, Star, MessageSquare, Phone, Globe, ChevronRight, Building2, Mail, Briefcase, FileText, Tag, FolderKanban } from 'lucide-react';
+import { SkeletonList } from './components/ui/Skeleton';
+import { AuthView } from './types';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from './lib/AuthContext';
 import { searchAll } from './lib/SearchEngine';
 import { SearchResultItem } from './lib/RankingEngine';
 
 export default function App() {
-  const { user, profile, hasCompanyProfile, loading } = useAuth();
-  const [view, setView] = useState<AuthView>('home');
+  const { user, profile, hasCompanyProfile, loading, logout } = useAuth();
+  const [view, setView] = useState<AuthView>('login');
 
   // Search States
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
-  const [searchCity, setSearchCity] = useState('Gniezno');
+  const [searchCity, setSearchCity] = useState('Poznań');
   const [isSearching, setIsSearching] = useState(false);
+  const isWorkspaceView = view === 'dashboard-client' || view === 'dashboard-company' || view === 'dashboard-admin';
 
+  // Role Discipline & Guarded Routing
   useEffect(() => {
+    if (loading) return;
+
     if (!user) {
-      setView('login');
+      // Unauthenticated users must see login screen (or register / forgot-password if navigating there)
+      if (view !== 'login' && view !== 'register' && view !== 'forgot-password') {
+        setView('login');
+      }
       return;
     }
 
-    // User is logged in, route them by role
+    // Role-specific routing rules for authenticated users
     if (profile?.role === 'admin') {
-      setView('dashboard-admin');
-    } else if (profile?.role === 'firma') {
-      if (hasCompanyProfile === false) {
-        setView('create-company-profile');
-      } else {
-        setView('dashboard-company');
+      const isForbiddenAdminView = 
+        view === 'login' || 
+        view === 'register' || 
+        view === 'forgot-password' || 
+        view === 'dashboard-company' || 
+        view === 'dashboard-client' ||
+        view === 'create-company-profile';
+
+      if (isForbiddenAdminView) {
+        setView('dashboard-admin');
       }
-    } else {
-      // client
-      setView('home');
+    } else if (profile?.role === 'firma') {
+      // Company role must stay in company mode!
+      if (hasCompanyProfile === false) {
+        if (view !== 'create-company-profile') {
+          setView('create-company-profile');
+        }
+      } else {
+        // Allow company profile view ONLY if it's previewing their own company profile
+        const isPreviewingSelf = view === 'company-profile' && selectedCompanyId === user.uid;
+        const isAllowedCompanyView = view === 'dashboard-company' || view === 'create-company-profile' || isPreviewingSelf;
+
+        if (!isAllowedCompanyView) {
+          setView('dashboard-company');
+        }
+      }
+    } else if (profile?.role === 'client') {
+      // Client role
+      const isForbiddenClientView = 
+        view === 'login' || 
+        view === 'register' || 
+        view === 'forgot-password' || 
+        view === 'dashboard-company' || 
+        view === 'dashboard-admin' || 
+        view === 'create-company-profile';
+
+      if (isForbiddenClientView) {
+        setView('home');
+      }
     }
-  }, [user, profile, hasCompanyProfile]);
+  }, [user, profile, hasCompanyProfile, view, selectedCompanyId, loading]);
 
   useEffect(() => {
-    handleSearch('', 'Gniezno');
+    handleSearch('', 'Poznań');
   }, []);
 
   const handleSearch = async (queryText: string, city: string) => {
@@ -61,201 +97,237 @@ export default function App() {
     setSearchQuery(queryText);
     setSearchCity(city);
 
-    // Save search history
-    if (queryText.trim() !== '') {
+    if (profile?.role !== 'firma') {
       try {
-        const existingLogsStr = localStorage.getItem('lokalnie_search_logs');
-        const existingLogs = existingLogsStr ? JSON.parse(existingLogsStr) : [];
-        const newLog = {
-          id: Date.now().toString(),
-          query: queryText,
-          city: city,
-          timestamp: new Date().toLocaleString('pl-PL', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        const saved = localStorage.getItem('lokalnie_recent_searches');
+        const current = saved ? JSON.parse(saved) : [];
+        const cleanQuery = queryText.trim();
+        const entry = {
+          id: `${Date.now()}`,
+          query: cleanQuery || 'Wszystko',
+          city: city || 'Poznań'
         };
-        const updatedLogs = [newLog, ...existingLogs].slice(0, 10); // keep last 10
-        localStorage.setItem('lokalnie_search_logs', JSON.stringify(updatedLogs));
+        const withoutDuplicate = current.filter((item: { query: string; city: string }) => {
+          return item.query !== entry.query || item.city !== entry.city;
+        });
+        localStorage.setItem('lokalnie_recent_searches', JSON.stringify([entry, ...withoutDuplicate].slice(0, 4)));
       } catch (err) {
-        console.error('Could not save search log', err);
+        console.error('Could not save recent search', err);
       }
     }
 
     try {
       const results = await searchAll(queryText);
       setSearchResults(results);
-      setView('search');
+      if (queryText.trim() !== '') {
+        // For company role, searching doesn't divert away from company mode
+        if (profile?.role !== 'firma') {
+          setView('search');
+        }
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Search error:', err);
     } finally {
       setIsSearching(false);
     }
   };
 
   const handleSelectCompany = (companyId: string) => {
+    // If company user clicks a company, redirect to their own dashboard unless it's themselves
+    if (profile?.role === 'firma') {
+      if (companyId === user?.uid) {
+        setSelectedCompanyId(companyId);
+        setView('company-profile');
+      } else {
+        setView('dashboard-company');
+      }
+      return;
+    }
     setSelectedCompanyId(companyId);
     setView('company-profile');
   };
 
-  const handleContactCompany = (companyId: string, companyName: string) => {
-    setView('dashboard-client');
+  const handleNavigate = (targetView: AuthView, id?: string) => {
+    if (id) setSelectedCompanyId(id);
+
+    // Enforce role discipline on manual navigation requests
+    if (profile?.role === 'firma') {
+      if (targetView === 'company-profile' && id && id === user?.uid) {
+        setView('company-profile');
+        return;
+      }
+      if (targetView !== 'dashboard-company' && targetView !== 'create-company-profile') {
+        setView('dashboard-company');
+        return;
+      }
+    } else if (profile?.role === 'client') {
+      if (targetView === 'dashboard-company' || targetView === 'dashboard-admin' || targetView === 'create-company-profile') {
+        setView('home');
+        return;
+      }
+    } else if (profile?.role === 'admin') {
+      if (targetView === 'dashboard-company' || targetView === 'dashboard-client' || targetView === 'create-company-profile') {
+        setView('dashboard-admin');
+        return;
+      }
+    }
+
+    setView(targetView);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center font-sans relative overflow-hidden text-white">
+        <ToastContainer />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/10 blur-[120px] rounded-full pointer-events-none" />
+        <div className="relative z-10 text-center space-y-5">
+          <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20 mx-auto animate-pulse">
+            <Sparkles className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-black tracking-tight leading-none text-white">
+              LOKALNIE<span className="text-indigo-400">PRO</span>
+            </h1>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2 animate-pulse">
+              Ładowanie serwisu usługi...
+            </p>
+          </div>
+          <Loader2 className="w-6 h-6 text-indigo-400 animate-spin mx-auto mt-3" />
+        </div>
       </div>
     );
   }
 
-  // GUEST FLOW (not logged in)
-  if (!user) {
+  if (user && !profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 flex items-center justify-center font-sans overflow-y-auto p-6">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-4 font-sans text-white">
         <ToastContainer />
-        {/* Decorative glow */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute -top-[20%] -left-[20%] w-[70%] h-[50%] bg-blue-650/20 blur-[120px] rounded-full mix-blend-screen"></div>
-          <div className="absolute bottom-[10%] -right-[20%] w-[60%] h-[40%] bg-indigo-650/10 blur-[100px] rounded-full mix-blend-screen"></div>
-        </div>
-
-        <div className="max-w-[420px] w-full bg-white rounded-3xl shadow-2xl p-8 md:p-10 border border-slate-100 relative z-10">
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/30 mx-auto mb-4">
-              <Sparkles className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">LOKALNIE<span className="text-blue-600">PRO</span></h1>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Platforma wyszukiwania ofert</p>
+        <div className="w-full max-w-md rounded-3xl border border-white/10 bg-white/[0.04] p-6 text-center shadow-2xl">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/15 text-indigo-300">
+            <Loader2 className="h-6 w-6 animate-spin" />
           </div>
-
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={view}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.15 }}
-            >
-              {view === 'register' && <RegisterForm onNavigate={setView} />}
-              {view === 'forgot-password' && <ForgotPasswordForm onNavigate={setView} />}
-              {view === 'create-company-profile' && <CompanyProfileForm onNavigate={setView} />}
-              {view !== 'register' && view !== 'forgot-password' && view !== 'create-company-profile' && (
-                <LoginForm onNavigate={setView} />
-              )}
-            </motion.div>
-          </AnimatePresence>
+          <h1 className="text-xl font-black tracking-tight">Weryfikujemy Twoje konto</h1>
+          <p className="mt-2 text-sm font-medium leading-relaxed text-slate-300">
+            Nie udało się jeszcze pobrać roli użytkownika. Odśwież stronę za chwilę albo wyloguj się i spróbuj ponownie.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              await logout();
+              setView('login');
+            }}
+            className="mt-6 w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-xs font-bold text-white transition-colors hover:bg-white/15"
+          >
+            Wyloguj i wróć do logowania
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-300">
       <ToastContainer />
-      <Navbar currentView={view} onNavigate={setView} />
 
-      <main className="flex-1">
-        <AnimatePresence mode="wait">
-          
-          {/* CLIENT HOME VIEW: SEARCH ENGINE */}
-          {view === 'home' && (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-            >
-              <HomePage onSearch={handleSearch} onSelectCompany={handleSelectCompany} />
-            </motion.div>
-          )}
+      {!isWorkspaceView && (
+        <Navbar 
+          currentView={view} 
+          onNavigate={handleNavigate} 
+        />
+      )}
 
-          {/* SEARCH RESULTS VIEW */}
-          {view === 'search' && (
-            <motion.div
-              key="search"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10"
-            >
-              <div className="mb-8">
-                <SearchBar initialQuery={searchQuery} onSearch={handleSearch} />
-                <p className="text-slate-500 text-sm font-bold mt-4">
-                  Wyniki wyszukiwania dla frazy: <span className="text-slate-900">"{searchQuery || 'Wszystko'}"</span> w lokalizacji <span className="text-slate-900">{searchCity}</span>
-                </p>
+      {/* Dynamic View Router */}
+      <div className="flex-1">
+        {view === 'login' && (
+          <LoginForm onNavigate={handleNavigate} />
+        )}
+
+        {view === 'register' && (
+          <RegisterForm onNavigate={handleNavigate} />
+        )}
+
+        {view === 'forgot-password' && (
+          <ForgotPasswordForm onNavigate={handleNavigate} />
+        )}
+
+        {view === 'create-company-profile' && (
+          <CompanyProfileForm onNavigate={handleNavigate} />
+        )}
+
+        {view === 'home' && (
+          <HomePage 
+            onSearch={handleSearch} 
+            onSelectCompany={handleSelectCompany}
+          />
+        )}
+
+        {view === 'search' && (
+          <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+            <SearchBar initialQuery={searchQuery} onSearch={handleSearch} />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Wyniki wyszukiwania</p>
+                <h1 className="mt-1 text-xl font-black text-slate-950 dark:text-white">
+                  {searchQuery ? `Szukasz: ${searchQuery}` : 'Polecane firmy w okolicy'}
+                </h1>
               </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left column: List results */}
-                <div className="lg:col-span-2 space-y-6">
-                  {isSearching ? (
-                    <div className="flex items-center justify-center py-20">
-                      <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                    </div>
-                  ) : (
-                    <SearchResults 
-                      results={searchResults} 
-                      onSelectCompany={handleSelectCompany} 
-                      onContactCompany={handleContactCompany}
-                    />
-                  )}
-                </div>
-
-                {/* Right column: Interactive map popup */}
-                <div className="lg:col-span-1">
-                  <div className="sticky top-24">
-                    <SearchMap results={searchResults} onSelectCompany={handleSelectCompany} />
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                Lokalizacja: {searchCity || 'cała Polska'}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                {isSearching ? (
+                  <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <SkeletonList count={5} />
                   </div>
-                </div>
+                ) : (
+                  <SearchResults 
+                    results={searchResults} 
+                    query={searchQuery} 
+                    onSelectCompany={handleSelectCompany} 
+                  />
+                )}
               </div>
-            </motion.div>
-          )}
+              <div className="lg:col-span-1">
+                <SearchMap results={searchResults} onSelectCompany={handleSelectCompany} />
+              </div>
+            </div>
+          </div>
+        )}
 
-          {/* COMPANY PUBLIC PROFILE DETAIL VIEW */}
-          {view === 'company-profile' && selectedCompanyId && (
-            <motion.div
-              key="company-profile"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              <CompanyPublicProfile 
-                companyId={selectedCompanyId} 
-                onBack={() => setView('search')} 
-                onContact={handleContactCompany} 
-              />
-            </motion.div>
-          )}
+        {view === 'company-profile' && selectedCompanyId && (
+          <CompanyPublicProfile 
+            companyId={selectedCompanyId} 
+            onBack={() => {
+              if (profile?.role === 'firma') {
+                setView('dashboard-company');
+              } else {
+                setView('search');
+              }
+            }}
+            onOpenChat={() => {
+              if (profile?.role === 'firma') {
+                setView('dashboard-company');
+              } else {
+                setView('dashboard-client');
+              }
+            }}
+          />
+        )}
 
-          {/* DASHBOARD CLIENT */}
-          {view === 'dashboard-client' && (
-            <motion.div key="dashboard-client" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <ClientDashboard />
-            </motion.div>
-          )}
+        {view === 'dashboard-client' && (
+          <ClientDashboard onNavigate={handleNavigate} />
+        )}
 
-          {/* DASHBOARD COMPANY */}
-          {view === 'dashboard-company' && (
-            <motion.div key="dashboard-company" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <CompanyDashboard />
-            </motion.div>
-          )}
+        {view === 'dashboard-company' && (
+          <CompanyDashboard onNavigate={handleNavigate} />
+        )}
 
-          {/* DASHBOARD ADMIN */}
-          {view === 'dashboard-admin' && (
-            <motion.div key="dashboard-admin" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <AdminDashboard />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-slate-900 border-t border-slate-800 text-slate-400 py-10 mt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs font-medium space-y-2">
-          <p>&copy; {new Date().getFullYear()} LOKALNIE PRO. Wszystkie prawa zastrzeżone.</p>
-          <p className="text-slate-600">Lokalne wyszukiwanie firm, ofert i promocji w Twojej okolicy.</p>
-        </div>
-      </footer>
+        {view === 'dashboard-admin' && (
+          <AdminDashboard onNavigate={handleNavigate} />
+        )}
+      </div>
     </div>
   );
 }

@@ -21,6 +21,33 @@ export interface UserProfile {
     lng: number;
     city: string;
   };
+  phone?: string;
+  avatar?: string;
+}
+
+export interface FAQItem {
+  id?: string;
+  question: string;
+  answer: string;
+}
+
+export interface WorkingHoursDay {
+  open: string;  // e.g. "08:00"
+  close: string; // e.g. "17:00"
+  isOpen: boolean;
+  breakStart?: string;
+  breakEnd?: string;
+}
+
+export interface CompanyOpeningHours {
+  pn?: WorkingHoursDay;
+  wt?: WorkingHoursDay;
+  sr?: WorkingHoursDay;
+  czw?: WorkingHoursDay;
+  pt?: WorkingHoursDay;
+  sb?: WorkingHoursDay;
+  nd?: WorkingHoursDay;
+  [day: string]: WorkingHoursDay | string | undefined;
 }
 
 export interface Company {
@@ -41,14 +68,28 @@ export interface Company {
   gallery?: string[];
   lat: number;
   lng: number;
-  openingHours?: {
-    [day: string]: string; // e.g. "08:00 - 16:00"
-  };
+  openingHours?: CompanyOpeningHours | Record<string, any>;
   visibilityPackage: 'free' | 'silver' | 'gold' | 'platinum';
   workingArea?: string;
   rating?: number;
   reviewCount?: number;
   updatedAt: string;
+  
+  // Enhanced company features
+  foundedYear?: number;
+  bookingEnabled?: boolean;
+  bookingUrl?: string;
+  languages?: string[];
+  paymentMethods?: string[];
+  amenities?: string[];
+  faqs?: FAQItem[];
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
+  teamPhoto?: string;
+  certificates?: string[];
+  completenessScore?: number;
+  responseRateMinutes?: number;
 }
 
 export interface Service {
@@ -59,6 +100,8 @@ export interface Service {
   price: number;
   description: string;
   category: string;
+  durationMin?: number;
+  isActive?: boolean;
 }
 
 export interface Ad {
@@ -85,6 +128,10 @@ export interface Promotion {
   discountValue: string; // e.g. "-20%" or "50 zł taniej"
   expiresAt: string;
   imageUrl?: string;
+  promoCode?: string;
+  isActive?: boolean;
+  usageLimit?: number;
+  usedCount?: number;
 }
 
 export interface Review {
@@ -92,19 +139,56 @@ export interface Review {
   companyId: string;
   clientId: string;
   clientName: string;
+  clientAvatar?: string;
   rating: number;
   comment: string;
   createdAt: string;
+  reply?: string;
+  replyCreatedAt?: string;
+  images?: string[];
+}
+
+export interface Booking {
+  id: string;
+  companyId: string;
+  companyName: string;
+  clientId: string;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string;
+  serviceId: string;
+  serviceName: string;
+  servicePrice: number;
+  serviceDurationMin: number;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  status: 'pending' | 'accepted' | 'completed' | 'cancelled';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Message {
   id: string;
+  conversationId: string;
   senderId: string;
   receiverId: string;
   senderName: string;
   content: string;
   timestamp: string;
   read: boolean;
+  imageUrl?: string;
+}
+
+export interface Conversation {
+  id: string;
+  participants: string[]; // [clientId, companyId]
+  participantNames: Record<string, string>;
+  lastMessage: string;
+  lastMessageTimestamp: string;
+  unreadCount: Record<string, number>;
+  updatedAt: string;
 }
 
 export interface SavedSearch {
@@ -120,6 +204,7 @@ export interface SearchLog {
   query: string;
   city: string;
   timestamp: string;
+  userId?: string;
 }
 
 export interface Notification {
@@ -129,7 +214,8 @@ export interface Notification {
   content: string;
   read: boolean;
   createdAt: string;
-  type: 'message' | 'review' | 'promotion' | 'ad_expiry' | 'system';
+  type: 'message' | 'review' | 'booking' | 'promotion' | 'ad_expiry' | 'system';
+  linkId?: string;
 }
 
 export interface Statistics {
@@ -140,4 +226,27 @@ export interface Statistics {
   phones: number;
   messages: number;
   webClicks: number;
+  bookingsCount?: number;
+}
+
+export interface FavoriteCompany {
+  id: string;
+  userId: string;
+  companyId: string;
+  companyName: string;
+  category?: string;
+  city?: string;
+  rating?: number;
+  logo?: string;
+  createdAt: string;
+}
+
+export interface UserHistoryItem {
+  id: string;
+  userId: string;
+  type: 'company_view' | 'search';
+  targetId?: string;
+  title: string;
+  subtitle?: string;
+  timestamp: string;
 }

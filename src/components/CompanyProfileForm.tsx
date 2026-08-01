@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Building2, MapPin, Briefcase, Link as LinkIcon, Phone, Mail, FileText, CheckCircle2, ArrowRight, ArrowLeft, Building, Hash, Loader2, ImagePlus, X } from 'lucide-react';
+import { Building2, MapPin, Briefcase, Link as LinkIcon, Phone, Mail, FileText, CheckCircle2, ArrowRight, ArrowLeft, Building, Hash, Loader2, ImagePlus, X, Sparkles } from 'lucide-react';
 import { AuthView } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { getFirebaseDb, getFirebaseAuth } from '../lib/firebase';
@@ -48,14 +48,60 @@ export function CompanyProfileForm({ onNavigate }: Props) {
     setServices(services.filter(s => s !== serviceToRemove));
   };
 
-  const handleNext = () => setStep(prev => Math.min(prev + 1, 3));
-  const handlePrev = () => setStep(prev => Math.max(prev - 1, 1));
+  const validateStep = (currentStep: number): boolean => {
+    setError(null);
+    if (currentStep === 1) {
+      if (!formData.companyName.trim()) {
+        setError('Nazwa firmy jest wymagana.');
+        return false;
+      }
+      if (formData.nip.trim() && !/^\d{10}$/.test(formData.nip.trim())) {
+        setError('NIP musi składać się z dokładnie 10 cyfr.');
+        return false;
+      }
+      if (!formData.description.trim() || formData.description.trim().length < 10) {
+        setError('Opis firmy musi mieć co najmniej 10 znaków.');
+        return false;
+      }
+    }
+    if (currentStep === 2) {
+      if (!formData.address.trim() || !formData.city.trim() || !formData.postalCode.trim()) {
+        setError('Adres, miasto i kod pocztowy są wymagane.');
+        return false;
+      }
+      if (formData.phone.trim() && !/^\+?[0-9\s-]{9,15}$/.test(formData.phone.trim())) {
+        setError('Numer telefonu jest niepoprawny (wpisz od 9 do 15 cyfr).');
+        return false;
+      }
+      if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        setError('Podany adres e-mail jest niepoprawny.');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const handleNext = () => {
+    if (validateStep(step)) {
+      setStep(prev => Math.min(prev + 1, 3));
+    }
+  };
+  
+  const handlePrev = () => {
+    setError(null);
+    setStep(prev => Math.max(prev - 1, 1));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step < 3) {
       handleNext();
     } else {
+      if (!validateStep(1) || !validateStep(2)) return;
+      if (services.length === 0) {
+        setError('Wpisz przynajmniej jedną oferowaną usługę / kategorię w kroku 3.');
+        return;
+      }
       setLoading(true);
       setError(null);
       try {
@@ -86,21 +132,22 @@ export function CompanyProfileForm({ onNavigate }: Props) {
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto">
-      <div className="mb-10">
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2 tracking-tight">Company Profile</h1>
-          <p className="text-slate-500 text-sm">Stand out by providing comprehensive details about your business.</p>
-        </motion.div>
+    <div className="w-full max-w-xl mx-auto font-sans">
+      <div className="mb-10 text-center">
+        <div className="w-11 h-11 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-550/20 mx-auto mb-4 animate-pulse">
+          <Sparkles className="w-5.5 h-5.5 text-white" />
+        </div>
+        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight leading-none">Profil Działalności</h1>
+        <p className="text-xs font-semibold text-slate-500 mt-2">Uzupełnij informacje o firmie, aby założyć darmową wizytówkę.</p>
         
-        {/* Advanced Progress Bar */}
-        <div className="mt-8 flex items-center justify-between relative">
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-100 rounded-full z-0"></div>
+        {/* Progress Tracker */}
+        <div className="mt-8 flex items-center justify-between relative max-w-sm mx-auto px-4">
+          <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-0.5 bg-slate-200 z-0"></div>
           <motion.div 
-            className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-blue-600 rounded-full z-0" 
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-indigo-600 z-0" 
             initial={{ width: 0 }}
             animate={{ width: `${((step - 1) / 2) * 100}%` }}
-            transition={{ duration: 0.4, ease: "easeInOut" }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
           ></motion.div>
           
           {[1, 2, 3].map((item) => (
@@ -108,21 +155,21 @@ export function CompanyProfileForm({ onNavigate }: Props) {
               key={item} 
               initial={false}
               animate={{ 
-                scale: step === item ? 1.1 : 1,
-                backgroundColor: step >= item ? '#2563eb' : '#ffffff',
-                borderColor: step >= item ? '#2563eb' : '#e2e8f0',
-                color: step >= item ? '#ffffff' : '#94a3b8'
+                scale: step === item ? 1.05 : 1,
+                backgroundColor: step >= item ? '#4f46e5' : '#ffffff',
+                borderColor: step >= item ? '#4f46e5' : '#cbd5e1',
+                color: step >= item ? '#ffffff' : '#64748b'
               }}
-              className="relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 shadow-sm transition-colors duration-300"
+              className="relative z-15 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border shadow-xs transition-colors duration-300 bg-white"
             >
-              {step > item ? <CheckCircle2 className="w-4 h-4" /> : item}
+              {step > item ? <CheckCircle2 className="w-4.5 h-4.5" /> : item}
             </motion.div>
           ))}
         </div>
-        <div className="flex justify-between text-[11px] font-bold text-slate-400 mt-4 uppercase tracking-widest">
-          <span className={step >= 1 ? 'text-blue-600' : ''}>Essentials</span>
-          <span className={`text-center ${step >= 2 ? 'text-blue-600' : ''}`}>Location</span>
-          <span className={`text-right ${step >= 3 ? 'text-blue-600' : ''}`}>Services</span>
+        <div className="flex justify-between text-[9px] font-bold text-slate-400 mt-3 uppercase tracking-wider max-w-sm mx-auto px-1">
+          <span className={step >= 1 ? 'text-indigo-600' : ''}>Podstawowe</span>
+          <span className={`text-center ${step >= 2 ? 'text-indigo-600' : ''}`}>Lokalizacja</span>
+          <span className={`text-right ${step >= 3 ? 'text-indigo-600' : ''}`}>Usługi</span>
         </div>
       </div>
 
@@ -133,9 +180,9 @@ export function CompanyProfileForm({ onNavigate }: Props) {
               initial={{ opacity: 0, height: 0 }} 
               animate={{ opacity: 1, height: 'auto' }} 
               exit={{ opacity: 0, height: 0 }}
-              className="bg-red-50/80 backdrop-blur-sm text-red-600 p-4 rounded-xl text-sm border border-red-100 mb-6 flex items-center"
+              className="bg-rose-50 border border-rose-100/50 text-rose-700 p-4 rounded-xl text-xs font-semibold mb-6 flex items-center"
             >
-              <span className="font-semibold">{error}</span>
+              <span>{error}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -144,29 +191,29 @@ export function CompanyProfileForm({ onNavigate }: Props) {
           {step === 1 && (
             <motion.div
               key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, ease: "circOut" }}
-              className="space-y-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6 animate-fadeIn"
             >
-              <div className="bg-white border border-slate-200/60 shadow-sm p-6 sm:p-8 rounded-2xl">
-                <div className="flex items-center space-x-6 mb-8 pb-8 border-b border-slate-100">
-                  <div className="w-24 h-24 rounded-full bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 hover:text-blue-600 hover:border-blue-300 hover:bg-blue-50 transition-all cursor-pointer group">
-                    <ImagePlus className="w-6 h-6 mb-1 group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider">Logo</span>
+              <div className="bg-white border border-slate-200/60 shadow-xs p-6 sm:p-8 rounded-2xl space-y-5">
+                <div className="flex items-center space-x-6 pb-6 border-b border-slate-100">
+                  <div className="w-20 h-20 rounded-full bg-slate-50 border border-dashed border-slate-300 flex flex-col items-center justify-center text-slate-400 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/20 transition-all cursor-pointer group shrink-0">
+                    <ImagePlus className="w-5 h-5 mb-1 group-hover:scale-105 transition-transform" />
+                    <span className="text-[8px] font-bold uppercase tracking-wider">Logo</span>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-bold text-slate-900 mb-1">Company Identity</h3>
-                    <p className="text-sm text-slate-500">Upload your logo and set up your core brand details.</p>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Tożsamość firmy</h3>
+                    <p className="text-[11px] font-medium text-slate-500">Prześlij plik logo firmy oraz zdefiniuj podstawową markę działalności.</p>
                   </div>
                 </div>
                 
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <div>
-                    <label htmlFor="companyName" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Company Name</label>
+                    <label htmlFor="companyName" className="notion-label">Nazwa firmy</label>
                     <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                         <Building className="h-4 w-4" />
                       </div>
                       <input
@@ -175,16 +222,16 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                         required
                         value={formData.companyName}
                         onChange={handleChange}
-                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                        placeholder="Acme Corporation Ltd."
+                        className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
+                        placeholder="np. Salon Anna Gniezno"
                       />
                     </div>
                   </div>
                   
                   <div>
-                    <label htmlFor="nip" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Tax ID (NIP)</label>
+                    <label htmlFor="nip" className="notion-label">NIP (Tax ID)</label>
                     <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                         <Hash className="h-4 w-4" />
                       </div>
                       <input
@@ -193,16 +240,16 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                         required
                         value={formData.nip}
                         onChange={handleChange}
-                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                        placeholder="123-456-78-90"
+                        className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
+                        placeholder="NIP np. 1234567890"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="description" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">About the Company</label>
+                    <label htmlFor="description" className="notion-label font-black">O firmie (Opis)</label>
                     <div className="relative group">
-                      <div className="absolute top-3.5 left-3.5 flex items-start pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                      <div className="absolute top-3.5 left-3 flex items-start pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                         <FileText className="h-4 w-4" />
                       </div>
                       <textarea
@@ -211,8 +258,8 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                         rows={4}
                         value={formData.description}
                         onChange={handleChange}
-                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all resize-none"
-                        placeholder="Tell us what makes your company unique..."
+                        className="notion-input pl-9 bg-slate-50/50 border border-slate-200 resize-none text-xs"
+                        placeholder="Napisz kilka zdań o swojej firmie, usługach oraz doświadczeniu..."
                       />
                     </div>
                   </div>
@@ -224,23 +271,23 @@ export function CompanyProfileForm({ onNavigate }: Props) {
           {step === 2 && (
             <motion.div
               key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, ease: "circOut" }}
-              className="space-y-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6 animate-fadeIn"
             >
-              <div className="bg-white border border-slate-200/60 shadow-sm p-6 sm:p-8 rounded-2xl">
-                <div className="mb-8">
-                  <h3 className="text-lg font-bold text-slate-900 mb-1">Location & Contact</h3>
-                  <p className="text-sm text-slate-500">Where can clients find you?</p>
+              <div className="bg-white border border-slate-200/60 shadow-xs p-6 sm:p-8 rounded-2xl">
+                <div className="mb-6 pb-4 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">Lokalizacja i kontakt</h3>
+                  <p className="text-[11px] font-medium text-slate-500">Wpisz dane teleadresowe widoczne dla klientów.</p>
                 </div>
                 
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <div>
-                    <label htmlFor="address" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Street Address</label>
+                    <label htmlFor="address" className="notion-label">Ulica i numer</label>
                     <div className="relative group">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                         <MapPin className="h-4 w-4" />
                       </div>
                       <input
@@ -249,44 +296,44 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                         required
                         value={formData.address}
                         onChange={handleChange}
-                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                        placeholder="123 Innovation Drive"
+                        className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
+                        placeholder="np. Chrobrego 14/2"
                       />
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-5">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="city" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">City</label>
+                      <label htmlFor="city" className="notion-label">Miasto</label>
                       <input
                         id="city"
                         type="text"
                         required
                         value={formData.city}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                        placeholder="Warsaw"
+                        className="notion-input bg-slate-50/50 border border-slate-200"
+                        placeholder="np. Gniezno"
                       />
                     </div>
                     <div>
-                      <label htmlFor="postalCode" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Postal Code</label>
+                      <label htmlFor="postalCode" className="notion-label">Kod pocztowy</label>
                       <input
                         id="postalCode"
                         type="text"
                         required
                         value={formData.postalCode}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                        placeholder="00-001"
+                        className="notion-input bg-slate-50/50 border border-slate-200"
+                        placeholder="np. 62-200"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-4 border-t border-slate-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                     <div>
-                      <label htmlFor="phone" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Phone</label>
+                      <label htmlFor="phone" className="notion-label">Telefon</label>
                       <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                           <Phone className="h-4 w-4" />
                         </div>
                         <input
@@ -295,15 +342,15 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                           required
                           value={formData.phone}
                           onChange={handleChange}
-                          className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                          className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
                           placeholder="+48 123 456 789"
                         />
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Business Email</label>
+                      <label htmlFor="email" className="notion-label">E-mail biznesowy</label>
                       <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                           <Mail className="h-4 w-4" />
                         </div>
                         <input
@@ -312,8 +359,8 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                           required
                           value={formData.email}
                           onChange={handleChange}
-                          className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                          placeholder="contact@acme.com"
+                          className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
+                          placeholder="kontakt@example.pl"
                         />
                       </div>
                     </div>
@@ -326,23 +373,23 @@ export function CompanyProfileForm({ onNavigate }: Props) {
           {step === 3 && (
             <motion.div
               key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3, ease: "circOut" }}
-              className="space-y-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="space-y-6 animate-fadeIn"
             >
-              <div className="bg-white border border-slate-200/60 shadow-sm p-6 sm:p-8 rounded-2xl">
-                <div className="mb-8">
-                  <h3 className="text-lg font-bold text-slate-900 mb-1">Services & Digital</h3>
-                  <p className="text-sm text-slate-500">What do you offer and where can people find you?</p>
+              <div className="bg-white border border-slate-200/60 shadow-xs p-6 sm:p-8 rounded-2xl">
+                <div className="mb-6 pb-4 border-b border-slate-100">
+                  <h3 className="text-sm font-bold text-slate-900">Słowa kluczowe i strona www</h3>
+                  <p className="text-[11px] font-medium text-slate-500">Zdefiniuj kategorie oraz adresy www.</p>
                 </div>
                 
-                <div className="space-y-6">
+                <div className="space-y-5">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Services Offered</label>
-                    <div className="relative group mb-3">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                    <label className="notion-label">Słowa kluczowe / Usługi (Wpisz i zatwierdź Enterem)</label>
+                    <div className="relative group mb-3.5">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                         <Briefcase className="h-4 w-4" />
                       </div>
                       <input
@@ -350,11 +397,12 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                         value={serviceInput}
                         onChange={(e) => setServiceInput(e.target.value)}
                         onKeyDown={addService}
-                        className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                        placeholder="Type a service and press Enter"
+                        className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
+                        placeholder="np. Strzyżenie męskie"
                       />
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    
+                    <div className="flex flex-wrap gap-1.5">
                       <AnimatePresence>
                         {services.map((service) => (
                           <motion.span
@@ -362,13 +410,13 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
-                            className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-blue-700 text-sm font-semibold shadow-sm"
+                            className="inline-flex items-center px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-100/50 text-indigo-700 text-xs font-semibold shadow-3xs"
                           >
                             {service}
                             <button
                               type="button"
                               onClick={() => removeService(service)}
-                              className="ml-2 text-blue-400 hover:text-blue-600 focus:outline-none"
+                              className="ml-1.5 text-indigo-400 hover:text-indigo-600 focus:outline-none cursor-pointer"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -376,16 +424,16 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                         ))}
                       </AnimatePresence>
                       {services.length === 0 && (
-                        <span className="text-sm text-slate-400 italic">No services added yet.</span>
+                        <span className="text-xs text-slate-400 italic">Nie dodano jeszcze żadnych słów kluczowych.</span>
                       )}
                     </div>
                   </div>
                   
-                  <div className="pt-6 border-t border-slate-100 space-y-5">
+                  <div className="pt-6 border-t border-slate-100 space-y-4">
                     <div>
-                      <label htmlFor="website" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Website (Optional)</label>
+                      <label htmlFor="website" className="notion-label">Strona WWW (opcjonalnie)</label>
                       <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                           <LinkIcon className="h-4 w-4" />
                         </div>
                         <input
@@ -393,16 +441,16 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                           type="url"
                           value={formData.website}
                           onChange={handleChange}
-                          className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                          placeholder="https://acme.com"
+                          className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
+                          placeholder="https://example.pl"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label htmlFor="socialLinks" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">LinkedIn Profile (Optional)</label>
+                      <label htmlFor="socialLinks" className="notion-label">Link do profilu społecznościowego (opcjonalnie)</label>
                       <div className="relative group">
-                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-indigo-600 transition-colors">
                           <LinkIcon className="h-4 w-4" />
                         </div>
                         <input
@@ -410,8 +458,8 @@ export function CompanyProfileForm({ onNavigate }: Props) {
                           type="text"
                           value={formData.socialLinks}
                           onChange={handleChange}
-                          className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 font-medium focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
-                          placeholder="linkedin.com/company/acme"
+                          className="notion-input pl-9 bg-slate-50/50 border border-slate-200"
+                          placeholder="facebook.com/twoja_firma"
                         />
                       </div>
                     </div>
@@ -427,24 +475,22 @@ export function CompanyProfileForm({ onNavigate }: Props) {
             <button
               type="button"
               onClick={handlePrev}
-              className="flex items-center px-6 py-3.5 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus:ring-4 focus:ring-slate-100 transition-all"
+              className="flex items-center px-5 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 hover:text-slate-900 focus:outline-none transition-all cursor-pointer shadow-3xs"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+              Wstecz
             </button>
           ) : (
-            <div></div> // Empty div to keep Next button on the right
+            <div></div>
           )}
           
           <button
             type="submit"
             disabled={loading}
-            className="group relative flex items-center px-8 py-3.5 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-900/20 transition-all shadow-lg shadow-slate-900/10 disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden"
+            className="group relative flex items-center px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold focus:outline-none transition-all shadow-md shadow-indigo-600/10 disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
           >
-            <span className="relative z-10 flex items-center">
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (step === 3 ? 'Complete Profile' : 'Continue')}
-              {step < 3 && <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />}
-            </span>
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (step === 3 ? 'Zatwierdź profil' : 'Dalej')}
+            {step < 3 && <ArrowRight className="w-3.5 h-3.5 ml-1.5 group-hover:translate-x-0.5 transition-transform" />}
           </button>
         </div>
       </form>

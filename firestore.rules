@@ -4,10 +4,55 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
       allow write: if request.auth != null && request.auth.uid == uid;
+      allow update: if request.auth != null && request.auth.uid == uid;
     }
+    
     match /companies/{uid} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == uid;
     }
+    
+    // Messages collection - rate limiting + spam checks
+    match /messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null &&
+        isValidMessage(request.resource.data) &&
+        !isRateLimited(request.auth.uid);
+      allow update: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Message rate limit tracker
+    match /rateLimits/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+    
+    // Spam scores
+    match /spamScores/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
+    }
+  }
+  
+  // Helper functions
+  function isValidMessage(data) {
+    return data.text != null &&
+      data.text.size() > 0 &&
+      data.text.size() < 5000 &&
+      data.userId != null &&
+      data.timestamp != null &&
+      !containsBadWords(data.text);
+  }
+  
+  function isRateLimited(userId) {
+    let rateLimit = get(/databases/$(database)/documents/rateLimits/$(userId)).data;
+    return rateLimit != null && rateLimit.blockedUntil > now;
+  }
+  
+  function containsBadWords(text) {
+    let lower = text.lower();
+    let spam = ['buy now!!!', 'click here', 'viagra', 'casino', 'lottery', 'free money'];
+    return lower.matches('.*(' + spam.join('|') + ').*');
   }
 }
