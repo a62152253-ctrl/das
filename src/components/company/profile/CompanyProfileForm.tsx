@@ -120,7 +120,6 @@ export function CompanyProfileForm({ onNavigate }: Props) {
         });
         
         localStorage.setItem('has_company_profile_' + user.uid, 'true');
-        console.log('Company Profile Submitted', formData);
         onNavigate('dashboard-company');
       } catch (err: any) {
         console.error('Error saving company profile:', err);
@@ -497,3 +496,4 @@ export function CompanyProfileForm({ onNavigate }: Props) {
     </div>
   );
 }
+
