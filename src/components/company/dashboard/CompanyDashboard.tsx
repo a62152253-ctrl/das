@@ -1,1 +1,1 @@
-export { CompanyDashboard } from '../CompanyDashboard';
+export { CompanyDashboard } from '@/components/company/CompanyDashboard';

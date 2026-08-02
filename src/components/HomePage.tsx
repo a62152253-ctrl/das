@@ -20,13 +20,13 @@ import {
   Flame,
   Loader2
 } from 'lucide-react';
-import { SearchBar } from './search/SearchBar';
-import { ViewMore } from './common/modals/ViewMore';
-import { UserSearchHistory } from './common/modals/UserSearchHistory';
-import { fetchSearchData, getCategoriesWithCounts } from '../lib/SearchEngine';
+import { SearchBar } from '@/components/search/SearchBar';
+import { ViewMore } from '@/components/common/modals/ViewMore';
+import { UserSearchHistory } from '@/components/common/modals/UserSearchHistory';
+import { fetchSearchData, getCategoriesWithCounts } from '@/lib/SearchEngine';
 import { Company, Promotion, Ad } from '@/types';
-import { SearchBot } from './search/bot/SearchBot';
-import { Skeleton, Button } from './ui';
+import { SearchBot } from '@/components/search/bot/SearchBot';
+import { Skeleton, Button } from '@/components/ui';
 import { motion } from 'framer-motion';
 
 interface Props {

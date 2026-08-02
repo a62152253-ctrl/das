@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { SearchResultItem } from '../../../lib/RankingEngine';
-import { SearchSortOption } from '../../../lib/SearchEngine';
+import { SearchResultItem } from '@/lib/RankingEngine';
+import { SearchSortOption } from '@/lib/SearchEngine';
 import { Star, MapPin, Tag, Briefcase, FileText, ExternalLink, Heart, Share2, ArrowUpDown, Sparkles, Filter, X, Grid3x3, List, Zap, TrendingUp, Users, AlertCircle, Flame, Clock, DollarSign, Award } from 'lucide-react';
-import { addToast, Button, Badge } from '@/ui';
+import { addToast, Button, Badge } from '@/components/ui';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {

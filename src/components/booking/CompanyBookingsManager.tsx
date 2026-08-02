@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Booking } from '@/types';
-import { subscribeUserBookings, updateBookingStatus } from '../../lib/BookingEngine';
+import { subscribeUserBookings, updateBookingStatus } from '@/lib/BookingEngine';
 import { Calendar as CalendarIcon, Clock, Phone, User, Check, X, CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { addToast } from '../ui/feedback/Toast';
+import { addToast } from '@/components/ui/feedback/Toast';
 
 interface CompanyBookingsManagerProps {
   companyId: string;

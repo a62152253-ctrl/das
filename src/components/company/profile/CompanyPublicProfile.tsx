@@ -6,11 +6,11 @@ import {
   CreditCard, Sparkles, MessageSquare, Info, Send, CheckCircle2
 } from 'lucide-react';
 import { Company, Service, Promotion } from '@/types';
-import { fetchSearchData } from '../../../lib/SearchEngine';
-import { useAuth } from '../../../lib/AuthContext';
-import { getFirebaseDb } from '../../../lib/firebase';
+import { fetchSearchData } from '@/lib/SearchEngine';
+import { useAuth } from '@/lib/AuthContext';
+import { getFirebaseDb } from '@/lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
-import { Skeleton, Button, Badge } from '@/ui';
+import { Skeleton, Button, Badge } from '@/components/ui';
 
 interface Props {
   companyId: string;

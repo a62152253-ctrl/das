@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Send, Star, Filter, AlertCircle } from 'lucide-react';
-import { Review } from '../../../types';
+import { Review } from '@/types';
 
 interface Props {
   reviews?: Review[];

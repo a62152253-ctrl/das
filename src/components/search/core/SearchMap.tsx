@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SearchResultItem } from '../../../lib/RankingEngine';
+import { SearchResultItem } from '@/lib/RankingEngine';
 import { MapPin, Navigation, Star, X } from 'lucide-react';
 
 interface Props {

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Building2, MapPin, Briefcase, Link as LinkIcon, Phone, Mail, FileText, CheckCircle2, ArrowRight, ArrowLeft, Building, Hash, Loader2, ImagePlus, X, Sparkles } from 'lucide-react';
-import { AuthView } from '../../../types';
+import { AuthView } from '@/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { getFirebaseDb, getFirebaseAuth } from '../../../lib/firebase';
+import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Props {

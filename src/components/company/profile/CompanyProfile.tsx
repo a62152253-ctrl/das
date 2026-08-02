@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Company } from '../../../types';
+import { Company } from "@/types";
 import { Building2, Globe, Phone, Mail, Link as LinkIcon, Plus, Trash2, ShieldCheck, Clock, Share2, HelpCircle, Heart, CreditCard, Landmark, CheckCircle } from 'lucide-react';
 
 interface Props {
@@ -544,3 +544,4 @@ export function CompanyProfile({ company, onChange, onSubmit }: Props) {
     </div>
   );
 }
+

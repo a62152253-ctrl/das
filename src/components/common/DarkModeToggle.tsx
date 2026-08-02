@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Sun, Moon } from 'lucide-react';
 
 export const DarkModeToggle: React.FC = () => {

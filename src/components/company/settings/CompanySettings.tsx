@@ -10,7 +10,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 
-import { Company } from "../../../types";
+import { Company } from "@/types";
 
 interface Props {
   company: Company;

@@ -1,0 +1,46 @@
+$files = Get-ChildItem -Path src -Recurse -Include "*.tsx","*.ts" -File
+
+$count = 0
+
+foreach ($file in $files) {
+
+    $content = [System.IO.File]::ReadAllText($file.FullName)
+    $originalContent = $content
+
+
+    # ../../xxx -> @/xxx
+    $content = $content -replace "from\s+['\`"](\.\./)+", "from '@/"
+
+    # import ../../xxx -> import @/xxx
+    $content = $content -replace "import\s+['\`"](\.\./)+", "import '@/"
+
+
+
+    if ($content -ne $originalContent) {
+
+
+        # backup
+        $backup = "$($file.FullName).backup"
+
+        if (!(Test-Path $backup)) {
+            Copy-Item $file.FullName $backup
+        }
+
+
+        # UTF8 without BOM
+        [System.IO.File]::WriteAllText(
+            $file.FullName,
+            $content,
+            (New-Object System.Text.UTF8Encoding($false))
+        )
+
+
+        $count++
+
+        Write-Host "✅ Updated: $($file.FullName)" -ForegroundColor Green
+    }
+}
+
+
+Write-Host ""
+Write-Host "🎉 Total files updated: $count" -ForegroundColor Cyan

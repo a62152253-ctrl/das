@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { initFirebase } from './firebase';
+import { initFirebase } from '@/lib/firebase';
 
 export interface UserProfile {
   name: string;

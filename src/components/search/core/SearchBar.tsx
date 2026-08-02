@@ -1,1 +1,1 @@
-export { SearchBar } from '../SearchBar';
+export { SearchBar } from '@/components/search/SearchBar';

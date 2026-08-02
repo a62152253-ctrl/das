@@ -1,5 +1,5 @@
-import { Company, Service } from '../../../types';
-import { VISIBILITY_TIER_SCORE, MAX_RESULTS } from './botConstants';
+import { Company, Service } from '@/types';
+import { VISIBILITY_TIER_SCORE, MAX_RESULTS } from '@/components/search/bot/botConstants';
 
 /**
  * Pre-compile search pattern once to avoid repeated toLowerCase calls
@@ -84,3 +84,4 @@ export function filterMatchingServices(
 
   return filtered.slice(0, MAX_RESULTS);
 }
+

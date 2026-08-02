@@ -1,6 +1,6 @@
 import React from 'react';
 import { AuthView } from '@/types';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 
 interface RoleGuardProps {
   allowedRoles: ('client' | 'firma' | 'admin')[];

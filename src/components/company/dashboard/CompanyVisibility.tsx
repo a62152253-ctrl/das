@@ -1,5 +1,5 @@
 import React from 'react';
-import { Company } from '../../../types';
+import { Company } from "@/types";
 import { Award, CheckCircle, Zap, Crown, Sparkles } from 'lucide-react';
 
 interface Props {
@@ -218,3 +218,4 @@ export function CompanyVisibility({ company, onUpgrade }: Props) {
     </div>
   );
 }
+

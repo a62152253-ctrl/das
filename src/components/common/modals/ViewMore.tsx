@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, TrendingUp, Star, MapPin, Heart, Share2 } from 'lucide-react';
-import { Company } from '../../../types';
-import { Button, addToast } from '@/ui';
+import { Company } from '@/types';
+import { Button, addToast } from '@/components/ui';
 
 interface ViewMoreProps {
   isOpen: boolean;
@@ -226,3 +226,4 @@ export function ViewMore({
 }
 
 export type { ViewMoreProps };
+

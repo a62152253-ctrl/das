@@ -1,8 +1,8 @@
-import { getFirebaseDb } from './firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { Company, Service, Ad, Promotion } from '@/types';
-import { calculateScore, SearchResultItem } from './RankingEngine';
-import { analyzeSearchQuery } from './AISearchEngine';
+import { calculateScore, SearchResultItem } from '@/lib/RankingEngine';
+import { analyzeSearchQuery } from '@/lib/AISearchEngine';
 
 const defaultCompany: Company = {
   uid: '',
@@ -635,4 +635,3 @@ export async function getCategoriesWithCounts(): Promise<Array<{ name: string; c
 
   return sorted.slice(0, 8);
 }
-

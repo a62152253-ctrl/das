@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 import { getFirebaseDb } from '@/lib/firebase';
 import { doc, getDoc, setDoc, query, collection, where, getDocs, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { 
@@ -10,20 +10,20 @@ import {
   Search, RefreshCw, DollarSign, ShoppingBag, Star, ArrowUp, ArrowDown 
 } from 'lucide-react';
 import { Company, Service, Ad, Promotion, Review, Statistics, Conversation } from '@/types';
-import { Sidebar } from '../common/layout/Sidebar';
-import { Card, CardHeader, CardBody, CardFooter, StatCard, Button, SkeletonStats, SkeletonList, addToast } from '@/ui';
-import { ProfileCompleteness } from './ProfileCompleteness';
-import { CompanyBookingsManager } from '../booking/CompanyBookingsManager';
-import { CompanyReviews } from '../reviews/CompanyReviews';
-import { CompanyProfileForm } from './CompanyProfileForm';
-import { ConversationList } from '../chat/ConversationList';
-import { ChatWindow } from '../chat/ChatWindow';
-import { CompanyServices } from './management/CompanyServices';
-import { CompanyPromotions } from './management/CompanyPromotions';
-import { CompanyAds } from './management/CompanyAds';
-import { CompanyStatistics } from './dashboard/CompanyStatistics';
-import { CompanySettings } from './settings/CompanySettings';
-import { getCompanyStatistics } from '../../lib/AnalyticsEngine';
+import { Sidebar } from '@/components/common/layout/Sidebar';
+import { Card, CardHeader, CardBody, CardFooter, StatCard, Button, SkeletonStats, SkeletonList, addToast } from '@/components/ui';
+import { ProfileCompleteness } from '@/components/company/ProfileCompleteness';
+import { CompanyBookingsManager } from '@/components/booking/CompanyBookingsManager';
+import { CompanyReviews } from '@/components/reviews/CompanyReviews';
+import { CompanyProfileForm } from '@/components/company/profile/CompanyProfileForm';
+import { ConversationList } from '@/components/chat/ConversationList';
+import { ChatWindow } from '@/components/chat/ChatWindow';
+import { CompanyServices } from '@/components/company/management/CompanyServices';
+import { CompanyPromotions } from '@/components/company/management/CompanyPromotions';
+import { CompanyAds } from '@/components/company/management/CompanyAds';
+import { CompanyStatistics } from '@/components/company/dashboard/CompanyStatistics';
+import { CompanySettings } from '@/components/company/settings/CompanySettings';
+import { getCompanyStatistics } from '@/lib/AnalyticsEngine';
 
 type CompanyTab = 
   | 'stats' 

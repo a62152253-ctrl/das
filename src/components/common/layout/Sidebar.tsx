@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { Sparkles, LogOut, Compass, Menu, X, Eye, LucideIcon } from 'lucide-react';
 import { DarkModeToggle } from '../DarkModeToggle';
 
@@ -49,7 +49,7 @@ export function Sidebar({
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 text-slate-400 hover:text-white focus:outline-none cursor-pointer"
-          aria-label="Otwórz menu"
+          aria-label="OtwĂłrz menu"
         >
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -95,7 +95,7 @@ export function Sidebar({
                   {title ? title.charAt(0).toUpperCase() : 'U'}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="text-xs font-bold text-white truncate leading-tight">{title || 'Użytkownik'}</h4>
+                  <h4 className="text-xs font-bold text-white truncate leading-tight">{title || 'UĹĽytkownik'}</h4>
                   <p className="text-[10px] font-semibold text-slate-500 mt-0.5 truncate">{subtitle}</p>
                 </div>
               </div>
@@ -120,7 +120,7 @@ export function Sidebar({
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-indigo-400 hover:bg-indigo-500/10 transition-all text-left cursor-pointer border border-indigo-500/20"
                 >
                   <Eye className="w-4 h-4 shrink-0 text-indigo-400" />
-                  <span>Podgląd Wizytówki</span>
+                  <span>PodglÄ…d WizytĂłwki</span>
                 </button>
               )}
 
@@ -133,7 +133,7 @@ export function Sidebar({
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/[0.03] transition-all text-left cursor-pointer"
                 >
                   <Compass className="w-4 h-4 shrink-0" />
-                  <span>Wróć do Wyszukiwarki</span>
+                  <span>WrĂłÄ‡ do Wyszukiwarki</span>
                 </button>
               )}
               
@@ -179,7 +179,7 @@ export function Sidebar({
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-all text-left cursor-pointer"
             >
               <LogOut className="w-4 h-4 shrink-0 text-slate-400" />
-              <span>Wyloguj się</span>
+              <span>Wyloguj siÄ™</span>
             </button>
           </div>
         </div>
@@ -187,3 +187,4 @@ export function Sidebar({
     </>
   );
 }
+

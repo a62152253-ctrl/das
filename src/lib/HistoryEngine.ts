@@ -1,4 +1,4 @@
-import { getFirebaseDb } from './firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { collection, addDoc, query, where, limit, onSnapshot } from 'firebase/firestore';
 import { UserHistoryItem } from '@/types';
 

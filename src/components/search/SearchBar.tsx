@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Sparkles, X, Building2, Tag, Megaphone, ArrowUpRight } from 'lucide-react';
-import { getSuggestions, SearchSuggestionItem } from '../lib/SearchEngine';
+import { getSuggestions, SearchSuggestionItem } from '@/lib/SearchEngine';
 
 interface Props {
   initialQuery?: string;

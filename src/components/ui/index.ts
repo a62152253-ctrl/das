@@ -10,7 +10,7 @@ export type { InputProps, TextareaProps, SearchInputProps } from './forms/Input'
 
 export { Modal } from './feedback/Modal';
 export { toast, ToastContainer, addToast } from './feedback/Toast';
-export type { ToastType } from '@/lib/useToast';
+export type { ToastType } from '../lib/useToast';
 
 // Utility Components
 export { Skeleton, SkeletonCard, SkeletonProfile, SkeletonList, SkeletonStats } from './progress/Skeleton';

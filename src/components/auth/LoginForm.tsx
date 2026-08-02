@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { toast } from '@/lib/useToast';
-import { createInstantAccount, downloadMyAccFile } from '../../lib/accountGenerator';
-import { useAuth } from '../../lib/AuthContext';
+import { createInstantAccount, downloadMyAccFile } from '@/lib/accountGenerator';
+import { useAuth } from '@/lib/AuthContext';
 
 interface Props {
   onNavigate: (view: AuthView) => void;

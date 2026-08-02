@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
 import { Loader2 } from 'lucide-react';
-import { MessageBubble } from '../bot/MessageBubble';
-import { Company, Service } from '../../../types';
-import { SEARCH_BOT_LOCATION } from '../bot/botConstants';
+import { MessageBubble } from '@/components/search/bot/MessageBubble';
+import { Company, Service } from '@/types';
+import { SEARCH_BOT_LOCATION } from '@/components/search/bot/botConstants';
 
 interface ResultsViewProps {
   loadingResults: boolean;
@@ -92,3 +92,4 @@ const ServiceCard = memo(function ServiceCard({ service, company, onSelect }: Se
     </div>
   );
 });
+

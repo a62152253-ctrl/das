@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Company, Statistics } from '../../../types';
+import { Company, Statistics } from '@/types';
 import { Eye, PhoneCall, MessageSquare, Star, Sparkles, TrendingUp, Users, CheckCircle2, AlertCircle, ArrowUpRight, Award, Download, Calendar, Zap, TrendingDown, BarChart3, Filter, X, Moon, Sun } from 'lucide-react';
-import { getFirebaseDb } from '../../../lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebase';import { collection, query, where, getDocs } from 'firebase/firestore';
 
 interface Props {
   company: Company;
@@ -354,3 +353,5 @@ ${calculateForecast() ? `- Przewidywane wyświetlenia za tydzień: ${calculateFo
     </div>
   );
 }
+
+

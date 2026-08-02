@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Ad } from '../../../types';
+import { Ad } from '@/types';
 import { Plus, Trash2, Search, Eye, Calendar, Tag, DollarSign, Archive, Check, TrendingUp, BarChart3, Copy, Share2, Edit3, Clock, Zap } from 'lucide-react';
 
 interface Props {
@@ -376,3 +376,4 @@ export function CompanyAds({ ads, onAdd, onDelete, onUpdate, onArchive, onDuplic
     </div>
   );
 }
+

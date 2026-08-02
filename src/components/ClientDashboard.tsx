@@ -1,1 +1,1 @@
-export { ClientDashboard } from './client/ClientDashboard';
+export { ClientDashboard } from '@/client/ClientDashboard';

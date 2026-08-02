@@ -1,0 +1,315 @@
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { MessageSquare, X, RefreshCw, Loader2 } from 'lucide-react';
+import { fetchSearchData } from '@/../lib/SearchEngine';
+import { Company, Service } from '@/../types';
+import { filterMatchingServices } from '@/botFilters';
+import { StepCategory, StepBudget, StepUrgency } from '@/BotSteps';
+import { MessageBubble } from '@/MessageBubble';
+import { ResultsView } from '@/../core/ResultsView';
+import { CATEGORIES_LIST, URGENCY_OPTIONS, RESULTS_LOAD_DELAY } from '@/botConstants';
+
+interface SearchBotProps {
+  onSelectCompany: (companyId: string) => void;
+}
+
+type StepType = 'category' | 'budget' | 'urgency' | 'results';
+
+export const SearchBot = memo(function SearchBot({ onSelectCompany }: SearchBotProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState<StepType>('category');
+
+  // Selection States
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [budgetOption, setBudgetOption] = useState<number | null>(null);
+  const [customBudget, setCustomBudget] = useState('');
+  const [urgency, setUrgency] = useState<string | null>(null);
+
+  // Result States
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [matchedServices, setMatchedServices] = useState<Array<{ service: Service; company: Company }>>([]);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll effect
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [step, matchedServices, loadingResults]);
+
+  // Memoized callbacks
+  const handleSearchTermChange = useCallback((term: string) => {
+    setSearchTerm(term);
+  }, []);
+
+  const handleQuerySubmit = useCallback((event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchTerm.trim();
+    if (query) {
+      setSelectedCategory(query);
+      setStep('budget');
+    }
+  }, [searchTerm]);
+
+  const handleCategorySelect = useCallback((category: string) => {
+    setSelectedCategory(category);
+    setSearchTerm(category);
+    setStep('budget');
+  }, []);
+
+  const handleBudgetSelect = useCallback((budget: number) => {
+    setBudgetOption(budget);
+    setCustomBudget('');
+    setStep('urgency');
+  }, []);
+
+  const handleCustomBudgetChange = useCallback((value: string) => {
+    setCustomBudget(value);
+  }, []);
+
+  const handleCustomBudgetSubmit = useCallback(() => {
+    const parsed = Number(customBudget.replace(/\s+/g, ''));
+    if (parsed > 0) {
+      setBudgetOption(parsed);
+      setStep('urgency');
+    }
+  }, [customBudget]);
+
+  const handleUrgencySelect = useCallback(async (urg: string) => {
+    setUrgency(urg);
+    setStep('results');
+    setLoadingResults(true);
+
+    try {
+      const { companies, services } = await fetchSearchData();
+      const filtered = filterMatchingServices(services, companies, selectedCategory, budgetOption, urg);
+
+      // Use delay only if specified (for UX: shows loading state)
+      if (RESULTS_LOAD_DELAY > 0) {
+        setTimeout(() => {
+          setMatchedServices(filtered);
+          setLoadingResults(false);
+        }, RESULTS_LOAD_DELAY);
+      } else {
+        setMatchedServices(filtered);
+        setLoadingResults(false);
+      }
+    } catch (error) {
+      console.error('SearchBot error:', error);
+      setLoadingResults(false);
+    }
+  }, [selectedCategory, budgetOption]);
+
+  const handleSelectCompany = useCallback(
+    (companyId: string, shouldClose: boolean) => {
+      if (shouldClose) setIsOpen(false);
+      onSelectCompany(companyId);
+    },
+    [onSelectCompany]
+  );
+
+  const handleResetBot = useCallback(() => {
+    setSelectedCategory(null);
+    setBudgetOption(null);
+    setCustomBudget('');
+    setUrgency(null);
+    setMatchedServices([]);
+    setSearchTerm('');
+    setStep('category');
+  }, []);
+
+  const toggleOpen = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  return (
+    <>
+      {/* Floating Action Trigger Button */}
+      <button
+        onClick={toggleOpen}
+        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full p-4 shadow-lg shadow-indigo-600/30 hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center cursor-pointer group"
+      >
+        {isOpen ? (
+          <X className="w-5 h-5" />
+        ) : (
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-wider pr-1 hidden sm:inline">
+              Bot Wyszukiwania
+            </span>
+          </div>
+        )}
+      </button>
+
+      {/* Expandable Chat Widget */}
+      {isOpen && <ChatWidget
+        step={step}
+        searchTerm={searchTerm}
+        selectedCategory={selectedCategory}
+        budgetOption={budgetOption}
+        customBudget={customBudget}
+        urgency={urgency}
+        loadingResults={loadingResults}
+        matchedServices={matchedServices}
+        messagesEndRef={messagesEndRef}
+        onSearchTermChange={handleSearchTermChange}
+        onQuerySubmit={handleQuerySubmit}
+        onCategorySelect={handleCategorySelect}
+        onBudgetSelect={handleBudgetSelect}
+        onCustomBudgetChange={handleCustomBudgetChange}
+        onCustomBudgetSubmit={handleCustomBudgetSubmit}
+        onUrgencySelect={handleUrgencySelect}
+        onSelectCompany={handleSelectCompany}
+        onResetBot={handleResetBot}
+      />}
+    </>
+  );
+});
+
+interface ChatWidgetProps {
+  step: StepType;
+  searchTerm: string;
+  selectedCategory: string | null;
+  budgetOption: number | null;
+  customBudget: string;
+  urgency: string | null;
+  loadingResults: boolean;
+  matchedServices: Array<{ service: Service; company: Company }>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
+  onSearchTermChange: (term: string) => void;
+  onQuerySubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onCategorySelect: (category: string) => void;
+  onBudgetSelect: (budget: number) => void;
+  onCustomBudgetChange: (value: string) => void;
+  onCustomBudgetSubmit: () => void;
+  onUrgencySelect: (urgency: string) => void;
+  onSelectCompany: (companyId: string, shouldClose: boolean) => void;
+  onResetBot: () => void;
+}
+
+const ChatWidget = memo(function ChatWidget({
+  step,
+  searchTerm,
+  selectedCategory,
+  budgetOption,
+  customBudget,
+  urgency,
+  loadingResults,
+  matchedServices,
+  messagesEndRef,
+  onSearchTermChange,
+  onQuerySubmit,
+  onCategorySelect,
+  onBudgetSelect,
+  onCustomBudgetChange,
+  onCustomBudgetSubmit,
+  onUrgencySelect,
+  onSelectCompany,
+  onResetBot
+}: ChatWidgetProps) {
+  return (
+    <div className="fixed bottom-22 right-6 z-50 w-full max-w-[360px] bg-white rounded-3xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col h-[460px] animate-in slide-in-from-bottom duration-200">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-650 p-4 text-white flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-white/20 rounded-xl flex items-center justify-center">
+            ✨
+          </div>
+          <div>
+            <h4 className="font-extrabold text-xs leading-none">Lokalnie Bot</h4>
+            <span className="text-[9px] font-bold opacity-80 mt-0.5 block">Szybkie ustrukturyzowane szukanie</span>
+          </div>
+        </div>
+        <button
+          onClick={onResetBot}
+          className="p-1 hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+        >
+          <X className="w-4 h-4 text-white" />
+        </button>
+      </div>
+
+      {/* Chat Body (Flow log) */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50 custom-scrollbar text-[11px] font-semibold text-slate-700">
+        {/* Greeting */}
+        <MessageBubble
+          isBot={true}
+          text="Cześć! Jestem Twoim pomocnikiem. Znajdę dla Ciebie idealną usługę. Wybierz branżę, której szukasz:"
+        />
+
+        {/* Selected Category Echo */}
+        {selectedCategory && (
+          <MessageBubble isBot={false} text={`Szukasz: ${selectedCategory}`} />
+        )}
+
+        {/* Category Step */}
+        {step === 'category' && (
+          <StepCategory
+            searchTerm={searchTerm}
+            onSearchTermChange={onSearchTermChange}
+            onCategorySelect={onCategorySelect}
+            onQuerySubmit={onQuerySubmit}
+          />
+        )}
+
+        {/* Budget Step */}
+        {step === 'budget' && (
+          <StepBudget
+            customBudget={customBudget}
+            onCustomBudgetChange={onCustomBudgetChange}
+            onBudgetSelect={onBudgetSelect}
+            onCustomBudgetSubmit={onCustomBudgetSubmit}
+          />
+        )}
+
+        {/* Budget Echo */}
+        {budgetOption !== null && step !== 'category' && (
+          <MessageBubble
+            isBot={false}
+            text={`Budżet: ${budgetOption === 999999 ? 'Dowolny' : `do ${budgetOption} zł`}`}
+          />
+        )}
+
+        {/* Urgency Prompt */}
+        {budgetOption !== null && (
+          <MessageBubble isBot={true} text="Kiedy chciałbyś zarezerwować termin?" />
+        )}
+
+        {/* Urgency Echo */}
+        {urgency && (
+          <MessageBubble
+            isBot={false}
+            text={URGENCY_OPTIONS.find((o) => o.value === urgency)?.label || ''}
+          />
+        )}
+
+        {/* Urgency Step */}
+        {step === 'urgency' && (
+          <StepUrgency onUrgencySelect={onUrgencySelect} />
+        )}
+
+        {/* Results */}
+        {step === 'results' && (
+          <ResultsView
+            loadingResults={loadingResults}
+            matchedServices={matchedServices}
+            onSelectCompany={onSelectCompany}
+          />
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Footer */}
+      {step === 'results' && !loadingResults && (
+        <div className="p-3 bg-white border-t border-slate-100 flex gap-2">
+          <button
+            onClick={onResetBot}
+            className="w-full flex items-center justify-center gap-1.5 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100/50 text-indigo-750 font-bold rounded-xl transition-all cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Szukaj od nowa
+          </button>
+        </div>
+      )}
+    </div>
+  );
+});

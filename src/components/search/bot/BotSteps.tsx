@@ -1,7 +1,7 @@
 import React, { memo, useCallback } from 'react';
-import { CATEGORIES_LIST, BUDGET_OPTIONS, URGENCY_OPTIONS } from './botConstants';
-import { OptionGrid } from './OptionButton';
-import { MessageBubble } from './MessageBubble';
+import { CATEGORIES_LIST, BUDGET_OPTIONS, URGENCY_OPTIONS } from '@/components/search/bot/botConstants';
+import { OptionGrid } from '@/components/search/bot/OptionButton';
+import { MessageBubble } from '@/components/search/bot/MessageBubble';
 
 interface StepCategoryProps {
   searchTerm: string;

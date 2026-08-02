@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { LucideIcon } from 'lucide-react';
-import { cn } from '../../../lib/utils';
+import { cn } from '@/lib/utils';
 
 type BadgeVariant = 'primary' | 'success' | 'warning' | 'danger' | 'neutral' | 'info';
 type BadgeSize = 'sm' | 'md' | 'lg';
@@ -62,3 +62,4 @@ export const Badge: React.FC<BadgeProps> = ({
 };
 
 export type { BadgeProps };
+

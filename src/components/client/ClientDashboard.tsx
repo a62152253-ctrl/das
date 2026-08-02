@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 import { 
   Heart, History, MessageSquare, Bell, Calendar, Star, 
   Sparkles, Trash2, ArrowRight, Clock, MapPin, CheckCircle, XCircle,
@@ -8,15 +8,15 @@ import {
   Settings, ChevronDown, Flame, BarChart3, AlertCircle
 } from 'lucide-react';
 import { Company, Booking, FavoriteCompany, UserHistoryItem, Conversation } from '@/types';
-import { Sidebar } from '../common/layout/Sidebar';
-import { Card, CardHeader, CardBody, CardFooter, StatCard, Button, Badge, Tabs, SkeletonCard, SkeletonList, addToast } from '@/ui';
-import { fetchSearchData } from '../../lib/SearchEngine';
-import { subscribeUserFavorites, toggleFavoriteCompany } from '../../lib/FavoritesEngine';
-import { subscribeUserHistory } from '../../lib/HistoryEngine';
-import { subscribeUserBookings, updateBookingStatus } from '../../lib/BookingEngine';
-import { generateSmartRecommendations, RecommendationResult } from '../../lib/RecommendationEngine';
-import { ConversationList } from '../chat/ConversationList';
-import { ChatWindow } from '../chat/ChatWindow';
+import { Sidebar } from '@/components/common/layout/Sidebar';
+import { Card, CardHeader, CardBody, CardFooter, StatCard, Button, Badge, Tabs, SkeletonCard, SkeletonList, addToast } from '@/components/ui';
+import { fetchSearchData } from '@/lib/SearchEngine';
+import { subscribeUserFavorites, toggleFavoriteCompany } from '@/lib/FavoritesEngine';
+import { subscribeUserHistory } from '@/lib/HistoryEngine';
+import { subscribeUserBookings, updateBookingStatus } from '@/lib/BookingEngine';
+import { generateSmartRecommendations, RecommendationResult } from '@/lib/RecommendationEngine';
+import { ConversationList } from '@/components/chat/ConversationList';
+import { ChatWindow } from '@/components/chat/ChatWindow';
 import { cn } from '@/lib/utils';
 
 interface ClientDashboardProps {

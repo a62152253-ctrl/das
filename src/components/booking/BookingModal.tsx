@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Company, Service, Booking } from '@/types';
-import { generateAvailableSlots, calculateEndTime, createBooking } from '../../lib/BookingEngine';
+import { generateAvailableSlots, calculateEndTime, createBooking } from '@/lib/BookingEngine';
 import { getFirebaseDb } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { useAuth } from '../../lib/AuthContext';
+import { useAuth } from '@/lib/AuthContext';
 import { Calendar, Clock, X, Check, User, Phone, Mail, AlertCircle } from 'lucide-react';
-import { addToast } from '../ui/feedback/Toast';
+import { addToast } from '@/components/ui/feedback/Toast';
 
 interface BookingModalProps {
   company: Company;

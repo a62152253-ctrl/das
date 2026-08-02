@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react';
-import { useToast, ToastType, toast } from '../../../lib/useToast';
+import { useToast, ToastType, toast } from '@/lib/useToast';
 
 export { toast };
 
@@ -58,3 +58,4 @@ export function ToastContainer() {
     </div>
   );
 }
+

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Conversation } from '@/types';
-import { subscribeUserConversations } from '../../lib/ChatEngine';
-import { useAuth } from '../../lib/AuthContext';
+import { subscribeUserConversations } from '@/lib/ChatEngine';
+import { useAuth } from '@/lib/AuthContext';
 import { MessageSquare, Clock, Loader2, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Badge } from '../ui/structure/Badge';
+import { Badge } from '@/components/ui/structure/Badge';
 
 interface ConversationListProps {
   onSelectConversation: (conv: Conversation) => void;

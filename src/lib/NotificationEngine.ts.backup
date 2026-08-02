@@ -1,0 +1,64 @@
+import { getFirebaseDb } from '@/firebase';
+import { 
+  collection, 
+  addDoc, 
+  updateDoc, 
+  doc, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { Notification } from '@/types';
+
+export async function createNotification(
+  notif: Omit<Notification, 'id' | 'createdAt' | 'read'>
+): Promise<string> {
+  try {
+    const db = getFirebaseDb();
+    const docRef = await addDoc(collection(db, 'notifications'), {
+      ...notif,
+      read: false,
+      createdAt: new Date().toISOString()
+    });
+    return docRef.id;
+  } catch (err) {
+    console.error('Error creating notification:', err);
+    return '';
+  }
+}
+
+export function subscribeUserNotifications(
+  userId: string,
+  callback: (notifications: Notification[]) => void
+) {
+  const db = getFirebaseDb();
+  const q = query(
+    collection(db, 'notifications'),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const list: Notification[] = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Notification));
+
+    // Sort client-side by date descending
+    list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    callback(list);
+  }, (err) => {
+    console.error('Error listening to notifications:', err);
+    callback([]);
+  });
+}
+
+export async function markNotificationAsRead(notificationId: string): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    const ref = doc(db, 'notifications', notificationId);
+    await updateDoc(ref, { read: true });
+  } catch (err) {
+    console.error('Error marking notification read:', err);
+  }
+}

@@ -1,4 +1,4 @@
-import { getFirebaseDb } from './firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { Statistics } from '@/types';
 

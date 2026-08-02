@@ -1,0 +1,191 @@
+import { Company, Booking, Service } from '@/types';
+import { getFirebaseDb } from '@/firebase';
+import { collection, addDoc, updateDoc, doc, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { createNotification } from '@/NotificationEngine';
+
+// Time utility functions
+export function timeToMinutes(timeStr: string): number {
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+export function minutesToTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+export function calculateEndTime(startTime: string, durationMin: number = 30): string {
+  const startMin = timeToMinutes(startTime);
+  const endMin = startMin + durationMin;
+  return minutesToTime(endMin);
+}
+
+export function isTimeRangeOverlapping(
+  start1: string,
+  end1: string,
+  start2: string,
+  end2: string
+): boolean {
+  const s1 = timeToMinutes(start1);
+  const e1 = timeToMinutes(end1);
+  const s2 = timeToMinutes(start2);
+  const e2 = timeToMinutes(end2);
+  return Math.max(s1, s2) < Math.min(e1, e2);
+}
+
+export function generateAvailableSlots(
+  company: Company,
+  dateStr: string,
+  existingBookings: Booking[],
+  durationMin: number = 45
+): string[] {
+  // Default working hours 08:00 - 18:00 if not specified
+  let openTimeStr = '08:00';
+  let closeTimeStr = '18:00';
+
+  if (company.openingHours) {
+    const dateObj = new Date(dateStr);
+    const dayIndex = dateObj.getDay(); // 0 is Sunday, 1 is Monday...
+    const dayKeys = ['nd', 'pn', 'wt', 'sr', 'czw', 'pt', 'sb'];
+    const dayNameMap: Record<number, string[]> = {
+      0: ['nd', 'niedziela', 'niedziela'],
+      1: ['pn', 'poniedzialek', 'poniedziałek'],
+      2: ['wt', 'wtorek'],
+      3: ['sr', 'środa', 'sroda'],
+      4: ['czw', 'czwartek'],
+      5: ['pt', 'piątek', 'piatek'],
+      6: ['sb', 'sobota']
+    };
+
+    const keysToTry = dayNameMap[dayIndex] || [];
+    let matchedVal: any = null;
+
+    Object.keys(company.openingHours).forEach(k => {
+      const lowerKey = k.toLowerCase();
+      if (keysToTry.some(kt => lowerKey.includes(kt))) {
+        matchedVal = company.openingHours![k];
+      }
+    });
+
+    if (matchedVal) {
+      if (typeof matchedVal === 'string') {
+        if (matchedVal.toLowerCase().includes('zamknięte') || matchedVal.toLowerCase().includes('wolne')) {
+          return [];
+        }
+        const parts = matchedVal.split('-');
+        if (parts.length === 2) {
+          openTimeStr = parts[0].trim();
+          closeTimeStr = parts[1].trim();
+        }
+      } else if (typeof matchedVal === 'object' && matchedVal.isOpen) {
+        openTimeStr = matchedVal.open || '08:00';
+        closeTimeStr = matchedVal.close || '18:00';
+      } else if (typeof matchedVal === 'object' && !matchedVal.isOpen) {
+        return [];
+      }
+    }
+  }
+
+  const openMin = timeToMinutes(openTimeStr);
+  const closeMin = timeToMinutes(closeTimeStr);
+  const slots: string[] = [];
+
+  // Generate slots in 15 minute increments
+  for (let current = openMin; current + durationMin <= closeMin; current += 15) {
+    const slotStart = minutesToTime(current);
+    const slotEnd = minutesToTime(current + durationMin);
+
+    // Check overlap with active existing bookings
+    const hasConflict = existingBookings.some(b => {
+      if (b.date !== dateStr || b.status === 'cancelled') return false;
+      const bEnd = b.endTime || calculateEndTime(b.startTime, b.serviceDurationMin || 30);
+      return isTimeRangeOverlapping(slotStart, slotEnd, b.startTime, bEnd);
+    });
+
+    if (!hasConflict) {
+      slots.push(slotStart);
+    }
+  }
+
+  return slots;
+}
+
+// Firestore operations
+export async function createBooking(bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  const db = getFirebaseDb();
+  const now = new Date().toISOString();
+  const docRef = await addDoc(collection(db, 'bookings'), {
+    ...bookingData,
+    createdAt: now,
+    updatedAt: now
+  });
+
+  // Notify company owner
+  await createNotification({
+    userId: bookingData.companyId,
+    title: 'Nowa rezerwacja wizyty',
+    content: `${bookingData.clientName} zarezerwował(a) usługę "${bookingData.serviceName}" na ${bookingData.date} o godz. ${bookingData.startTime}.`,
+    type: 'booking',
+    linkId: docRef.id
+  });
+
+  return docRef.id;
+}
+
+export async function updateBookingStatus(
+  bookingId: string,
+  newStatus: 'pending' | 'accepted' | 'completed' | 'cancelled',
+  clientId: string,
+  serviceName: string,
+  date: string,
+  time: string
+): Promise<void> {
+  const db = getFirebaseDb();
+  const ref = doc(db, 'bookings', bookingId);
+  await updateDoc(ref, {
+    status: newStatus,
+    updatedAt: new Date().toISOString()
+  });
+
+  const statusLabels: Record<string, string> = {
+    accepted: 'Zaakceptowano',
+    completed: 'Zakończono',
+    cancelled: 'Anulowano',
+    pending: 'Oczekująca'
+  };
+
+  // Notify client
+  await createNotification({
+    userId: clientId,
+    title: `Zmiana statusu rezerwacji: ${statusLabels[newStatus]}`,
+    content: `Twoja wizyta "${serviceName}" zaplanowana na ${date} o ${time} zmieniła status na: ${statusLabels[newStatus]}.`,
+    type: 'booking',
+    linkId: bookingId
+  });
+}
+
+export function subscribeUserBookings(userId: string, isCompany: boolean, callback: (bookings: Booking[]) => void) {
+  const db = getFirebaseDb();
+  const fieldName = isCompany ? 'companyId' : 'clientId';
+  const q = query(collection(db, 'bookings'), where(fieldName, '==', userId));
+
+  return onSnapshot(q, (snapshot) => {
+    const list: Booking[] = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Booking));
+    
+    // Sort client-side by date & startTime
+    list.sort((a, b) => {
+      const dateA = `${a.date} ${a.startTime}`;
+      const dateB = `${b.date} ${b.startTime}`;
+      return dateB.localeCompare(dateA);
+    });
+    
+    callback(list);
+  }, (err) => {
+    console.error('Error listening to bookings:', err);
+    callback([]);
+  });
+}

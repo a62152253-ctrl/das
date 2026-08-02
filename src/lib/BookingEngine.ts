@@ -1,7 +1,7 @@
 import { Company, Booking, Service } from '@/types';
-import { getFirebaseDb } from './firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
-import { createNotification } from './NotificationEngine';
+import { createNotification } from '@/lib/NotificationEngine';
 
 // Time utility functions
 export function timeToMinutes(timeStr: string): number {

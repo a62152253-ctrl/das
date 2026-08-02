@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Trash2, Search, MapPin, Calendar, TrendingUp, BarChart3 } from 'lucide-react';
-import { Button, Badge, addToast } from '@/ui';
+import { Button, Badge, addToast } from '@/components/ui';
 
 interface SearchHistoryItem {
   id: string;

@@ -1,5 +1,5 @@
 import { Company } from '@/types';
-import { ParsedQuery } from './AISearchEngine';
+import { ParsedQuery } from '@/lib/AISearchEngine';
 
 export function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371; // Earth's radius in km

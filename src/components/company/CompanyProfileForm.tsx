@@ -3,8 +3,8 @@ import { Building2, MapPin, Briefcase, Link as LinkIcon, Phone, Mail, FileText, 
 import { AuthView, Company, FAQItem } from '@/types';
 import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { ProfileCompleteness } from './ProfileCompleteness';
-import { addToast } from './ui/feedback/Toast';
+import { ProfileCompleteness } from '@/components/company/ProfileCompleteness';
+import { addToast } from '@/ui/feedback/Toast';
 
 interface Props {
   onNavigate: (view: AuthView) => void;

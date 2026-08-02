@@ -4,11 +4,11 @@ import {
   subscribeConversationMessages, 
   sendChatMessage, 
   markConversationAsRead 
-} from '../../lib/ChatEngine';
-import { useAuth } from '../../lib/AuthContext';
+} from '@/lib/ChatEngine';
+import { useAuth } from '@/lib/AuthContext';
 import { Send, Image, X, CheckCheck, Loader2, MessageSquare, Smile, Paperclip } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Button } from '../ui/buttons/Button';
+import { Button } from '@/components/ui/buttons/Button';
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -216,3 +216,5 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onClose })
     </motion.div>
   );
 };
+
+

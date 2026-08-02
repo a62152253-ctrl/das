@@ -1,0 +1,119 @@
+import { Company, UserHistoryItem, FavoriteCompany } from '@/types';
+import { calculateDistance } from '@/RankingEngine';
+
+export interface RecommendationResult {
+  company: Company;
+  matchScore: number;
+  reason: string;
+}
+
+export function generateSmartRecommendations(
+  allCompanies: Company[],
+  userFavorites: FavoriteCompany[] = [],
+  userHistory: UserHistoryItem[] = [],
+  userLocation?: { lat: number; lng: number }
+): RecommendationResult[] {
+  if (!allCompanies || allCompanies.length === 0) {
+    return [];
+  }
+
+  // Build category & city preference profile
+  const categoryFrequency: Record<string, number> = {};
+  const cityFrequency: Record<string, number> = {};
+  const favoritedCompanyIds = new Set(userFavorites.map(f => f.companyId));
+  const viewedCompanyIds = new Set(
+    userHistory.filter(h => h.type === 'company_view' && h.targetId).map(h => h.targetId!)
+  );
+
+  userFavorites.forEach(fav => {
+    if (fav.category) {
+      categoryFrequency[fav.category.toLowerCase()] = (categoryFrequency[fav.category.toLowerCase()] || 0) + 3;
+    }
+    if (fav.city) {
+      cityFrequency[fav.city.toLowerCase()] = (cityFrequency[fav.city.toLowerCase()] || 0) + 2;
+    }
+  });
+
+  userHistory.forEach(item => {
+    if (item.type === 'search' && item.title) {
+      const q = item.title.toLowerCase();
+      categoryFrequency[q] = (categoryFrequency[q] || 0) + 1;
+    }
+  });
+
+  // Calculate score for each company
+  const results: RecommendationResult[] = allCompanies.map(company => {
+    let matchScore = 0;
+    let reasons: string[] = [];
+
+    // Base score from rating
+    const ratingScore = (company.rating || 4.0) * 10; // max 50
+    matchScore += ratingScore;
+
+    // Category match
+    const servicesStr = (company.services || '').toLowerCase();
+    let categoryMatchCount = 0;
+    Object.keys(categoryFrequency).forEach(cat => {
+      if (servicesStr.includes(cat) || company.companyName.toLowerCase().includes(cat)) {
+        categoryMatchCount += categoryFrequency[cat];
+      }
+    });
+
+    if (categoryMatchCount > 0) {
+      matchScore += Math.min(40, categoryMatchCount * 10);
+      reasons.push('Zgodne z Twoimi zainteresowaniami');
+    }
+
+    // Location proximity boost
+    if (userLocation && company.lat && company.lng) {
+      const dist = calculateDistance(userLocation.lat, userLocation.lng, company.lat, company.lng);
+      if (dist <= 5) {
+        matchScore += 25;
+        reasons.push('W Twojej bezpośredniej okolicy (< 5 km)');
+      } else if (dist <= 15) {
+        matchScore += 15;
+      }
+    } else if (company.city) {
+      const normCity = company.city.toLowerCase();
+      if (cityFrequency[normCity]) {
+        matchScore += 15;
+        reasons.push(`Wybierane miasto: ${company.city}`);
+      }
+    }
+
+    // High rating bonus
+    if ((company.rating || 0) >= 4.7 && (company.reviewCount || 0) >= 3) {
+      matchScore += 15;
+      reasons.push('Wyjątkowo wysokie oceny klientów');
+    }
+
+    // Booking availability
+    if (company.bookingEnabled) {
+      matchScore += 10;
+      reasons.push('Szybka rezerwacja online');
+    }
+
+    // Visibility package boost
+    if (company.visibilityPackage === 'platinum' || company.visibilityPackage === 'gold') {
+      matchScore += 10;
+    }
+
+    // Deduct slightly if already favorited (user already knows them, show discoverable ones higher)
+    if (favoritedCompanyIds.has(company.uid)) {
+      matchScore += 5; 
+      reasons.push('Twój ulubiony wykonawca');
+    }
+
+    const defaultReason = reasons.length > 0 ? reasons[0] : 'Popularne w Twoim regionie';
+
+    return {
+      company,
+      matchScore: Math.round(matchScore),
+      reason: defaultReason
+    };
+  });
+
+  // Sort descending by score
+  results.sort((a, b) => b.matchScore - a.matchScore);
+  return results;
+}

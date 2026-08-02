@@ -6,16 +6,16 @@ import {
   CreditCard, Sparkles, MessageSquare, Info, Heart, ArrowLeft, Share2, ArrowUpRight
 } from 'lucide-react';
 import { Company, Service, Promotion, Review, FavoriteCompany } from '@/types';
-import { fetchSearchData } from '../../lib/SearchEngine';
-import { useAuth } from '../../lib/AuthContext';
-import { recordCompanyView, recordCompanyClick } from '../../lib/AnalyticsEngine';
-import { recordHistoryItem } from '../../lib/HistoryEngine';
-import { toggleFavoriteCompany, subscribeUserFavorites } from '../../lib/FavoritesEngine';
-import { getOrCreateConversation } from '../../lib/ChatEngine';
-import { BookingModal } from './booking/BookingModal';
-import { CompanyReviews } from './reviews/CompanyReviews';
-import { SkeletonProfile } from './ui/progress/Skeleton';
-import { addToast } from './ui/feedback/Toast';
+import { fetchSearchData } from '@/lib/SearchEngine';
+import { useAuth } from '@/lib/AuthContext';
+import { recordCompanyView, recordCompanyClick } from '@/lib/AnalyticsEngine';
+import { recordHistoryItem } from '@/lib/HistoryEngine';
+import { toggleFavoriteCompany, subscribeUserFavorites } from '@/lib/FavoritesEngine';
+import { getOrCreateConversation } from '@/lib/ChatEngine';
+import { BookingModal } from '@/components/booking/BookingModal';
+import { CompanyReviews } from '@/components/reviews/CompanyReviews';
+import { SkeletonProfile } from '@/ui/progress/Skeleton';
+import { addToast } from '@/ui/feedback/Toast';
 
 interface Props {
   companyId: string;

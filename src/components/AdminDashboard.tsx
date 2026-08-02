@@ -8,20 +8,20 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Company, Ad, Promotion, Review } from '@/types';
-import { useAuth } from '../lib/AuthContext';
-import { Sidebar } from './common/layout/Sidebar';
-import { AdminAdvancedPanel } from './admin/dashboard/AdminAdvancedPanel';
-import { UserDetailModal } from './AdminUserModal';
+import { useAuth } from '@/lib/AuthContext';
+import { Sidebar } from '@/components/common/layout/Sidebar';
+import { AdminAdvancedPanel } from '@/components/admin/dashboard/AdminAdvancedPanel';
+import { UserDetailModal } from '@/components/admin/dashboard/AdminUserModal';
 
 // Enterprise Admin Suite Sub-modules
-import { AdminUserAnalytics } from './admin/AdminUserAnalytics';
-import { AdminGusVerifier } from './admin/AdminGusVerifier';
-import { AdminAntiSpam } from './admin/AdminAntiSpam';
-import { AdminAuditLogger } from './admin/AdminAuditLogger';
-import { AdminSecurityRadar } from './admin/AdminSecurityRadar';
-import { AdminModerationQueue } from './admin/AdminModerationQueue';
-import { AdminSystemTelemetry } from './admin/AdminSystemTelemetry';
-import { AdminNotificationCenter } from './admin/AdminNotificationCenter';
+import { AdminUserAnalytics } from '@/components/admin/AdminUserAnalytics';
+import { AdminGusVerifier } from '@/components/admin/AdminGusVerifier';
+import { AdminAntiSpam } from '@/components/admin/AdminAntiSpam';
+import { AdminAuditLogger } from '@/components/admin/AdminAuditLogger';
+import { AdminSecurityRadar } from '@/components/admin/AdminSecurityRadar';
+import { AdminModerationQueue } from '@/components/admin/AdminModerationQueue';
+import { AdminSystemTelemetry } from '@/components/admin/AdminSystemTelemetry';
+import { AdminNotificationCenter } from '@/components/admin/AdminNotificationCenter';
 
 type AdminTab = 
   | 'users' 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Service } from '../../../types';
+import { Service } from '@/types';
 import { Plus, Trash2, Search, Tag, Sparkles, Clock, Eye, EyeOff, Edit2, Check, X } from 'lucide-react';
-import { addToast } from '@/ui';
+import { addToast } from '@/components/ui';
 
 interface Props {
   services: Service[];
@@ -353,3 +353,4 @@ export function CompanyServices({ services, onAdd, onDelete, onUpdate }: Props) 
     </div>
   );
 }
+

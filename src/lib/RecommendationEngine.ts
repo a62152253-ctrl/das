@@ -1,5 +1,5 @@
 import { Company, UserHistoryItem, FavoriteCompany } from '@/types';
-import { calculateDistance } from './RankingEngine';
+import { calculateDistance } from '@/lib/RankingEngine';
 
 export interface RecommendationResult {
   company: Company;

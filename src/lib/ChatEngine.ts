@@ -1,4 +1,4 @@
-import { getFirebaseDb } from './firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { 
   collection, 
   addDoc, 
@@ -13,7 +13,7 @@ import {
   getDoc 
 } from 'firebase/firestore';
 import { Conversation, Message } from '@/types';
-import { createNotification } from './NotificationEngine';
+import { createNotification } from '@/lib/NotificationEngine';
 
 export function getConversationId(userId1: string, userId2: string): string {
   return [userId1, userId2].sort().join('_');

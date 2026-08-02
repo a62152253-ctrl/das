@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { MessageSquare, X, RefreshCw, Loader2 } from 'lucide-react';
-import { fetchSearchData } from '../lib/SearchEngine';
+import { fetchSearchData } from '@/lib/SearchEngine';
 import { Company, Service } from '@/types';
-import { filterMatchingServices } from './search/bot/botFilters';
-import { StepCategory, StepBudget, StepUrgency } from './search/bot/BotSteps';
-import { MessageBubble } from './search/bot/MessageBubble';
-import { ResultsView } from './search/core/ResultsView';
-import { CATEGORIES_LIST, URGENCY_OPTIONS, RESULTS_LOAD_DELAY } from './search/bot/botConstants';
+import { filterMatchingServices } from '@/components/search/bot/botFilters';
+import { StepCategory, StepBudget, StepUrgency } from '@/components/search/bot/BotSteps';
+import { MessageBubble } from '@/components/search/bot/MessageBubble';
+import { ResultsView } from '@/components/search/core/ResultsView';
+import { CATEGORIES_LIST, URGENCY_OPTIONS, RESULTS_LOAD_DELAY } from '@/components/search/bot/botConstants';
 
 interface SearchBotProps {
   onSelectCompany: (companyId: string) => void;

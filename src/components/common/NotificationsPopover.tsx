@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Notification } from '@/types';
-import { subscribeUserNotifications, markNotificationAsRead } from '../../lib/NotificationEngine';
-import { useAuth } from '../../lib/AuthContext';
+import { subscribeUserNotifications, markNotificationAsRead } from '@/lib/NotificationEngine';
+import { useAuth } from '@/lib/AuthContext';
 import { Bell, Calendar, MessageSquare, Star, CheckCircle, Info, X } from 'lucide-react';
 
 interface NotificationsPopoverProps {

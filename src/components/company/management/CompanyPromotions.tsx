@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Promotion } from '../../../types';
+import { Promotion } from '@/types';
 import { Plus, Trash2, Tag, Calendar, Sparkles, Check, X, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 
 interface Props {
@@ -233,3 +233,4 @@ export function CompanyPromotions({ promotions, onAdd, onDelete, onToggleActive 
     </div>
   );
 }
+

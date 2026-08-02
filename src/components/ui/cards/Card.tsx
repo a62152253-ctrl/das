@@ -1,7 +1,7 @@
 import React, { forwardRef, HTMLAttributes } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
-import { cn } from '../../../lib/utils';
+import { cn } from "@/lib/utils";
 
 interface CardProps extends HTMLMotionProps<'div'> {
   variant?: 'default' | 'elevated' | 'outlined' | 'glass' | 'gradient';
