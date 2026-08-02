@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
-import { LoginForm } from './components/LoginForm';
-import { RegisterForm } from './components/RegisterForm';
-import { ForgotPasswordForm } from './components/ForgotPasswordForm';
-import { CompanyProfileForm } from './components/company/CompanyProfileForm';
-import { CompanyDashboard } from './components/company/CompanyDashboard';
+import { LoginForm } from './components/auth/LoginForm';
+import { RegisterForm } from './components/auth/RegisterForm';
+import { ForgotPasswordForm } from './components/auth/ForgotPasswordForm';
+import { CompanyProfileForm } from './components/company/profile/CompanyProfileForm';
+import { CompanyDashboard } from './components/company/dashboard/CompanyDashboard';
 import { ClientDashboard } from './components/client/ClientDashboard';
-import { AdminDashboard } from './components/AdminDashboard';
+import { AdminDashboard } from './components/admin/dashboard/AdminDashboard';
 import { Navbar } from './components/common/Navbar';
 import { HomePage } from './components/HomePage';
-import { CompanyPublicProfile } from './components/company/CompanyPublicProfile';
+import { CompanyPublicProfile } from './components/company/profile/CompanyPublicProfile';
 import { SearchBar } from './components/search/SearchBar';
-import { SearchResults } from './components/SearchResults';
-import { SearchMap } from './components/SearchMap';
-import { ToastContainer } from './components/ui/Toast';
-import { SkeletonList } from './components/ui/Skeleton';
+import { SearchResults } from './components/search/core/SearchResults';
+import { SearchMap } from './components/search/core/SearchMap';
+import { ToastContainer, SkeletonList } from './components/ui';
 import { AuthView } from './types';
 import { Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from './lib/AuthContext';
@@ -86,7 +85,7 @@ export default function App() {
         setView('home');
       }
     }
-  }, [user, profile, hasCompanyProfile, view, selectedCompanyId, loading]);
+  }, [user, profile, hasCompanyProfile, loading]);
 
   useEffect(() => {
     handleSearch('', 'Poznań');

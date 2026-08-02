@@ -1,0 +1,87 @@
+import { getFirebaseDb } from './firebase';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { Statistics } from '../types';
+
+export async function recordCompanyView(companyId: string): Promise<void> {
+  if (!companyId) return;
+  try {
+    const db = getFirebaseDb();
+    const statRef = doc(db, 'statistics', companyId);
+    const snap = await getDoc(statRef);
+    if (snap.exists()) {
+      await updateDoc(statRef, { views: increment(1) });
+    } else {
+      await setDoc(statRef, {
+        companyId,
+        views: 1,
+        searches: 0,
+        clicks: 0,
+        phones: 0,
+        messages: 0,
+        webClicks: 0,
+        bookingsCount: 0
+      });
+    }
+  } catch (e) {
+    console.error('Error recording company view statistic:', e);
+  }
+}
+
+export async function recordCompanyClick(companyId: string, type: 'phone' | 'web' | 'message' | 'booking'): Promise<void> {
+  if (!companyId) return;
+  try {
+    const db = getFirebaseDb();
+    const statRef = doc(db, 'statistics', companyId);
+    const fieldMap = {
+      phone: 'phones',
+      web: 'webClicks',
+      message: 'messages',
+      booking: 'bookingsCount'
+    };
+    const fieldName = fieldMap[type] || 'clicks';
+
+    const snap = await getDoc(statRef);
+    if (snap.exists()) {
+      await updateDoc(statRef, { 
+        clicks: increment(1),
+        [fieldName]: increment(1)
+      });
+    } else {
+      await setDoc(statRef, {
+        companyId,
+        views: 1,
+        searches: 0,
+        clicks: 1,
+        phones: type === 'phone' ? 1 : 0,
+        messages: type === 'message' ? 1 : 0,
+        webClicks: type === 'web' ? 1 : 0,
+        bookingsCount: type === 'booking' ? 1 : 0
+      });
+    }
+  } catch (e) {
+    console.error('Error recording company click statistic:', e);
+  }
+}
+
+export async function getCompanyStatistics(companyId: string): Promise<Statistics> {
+  const defaultStats: Statistics = {
+    companyId,
+    views: 0,
+    searches: 0,
+    clicks: 0,
+    phones: 0,
+    messages: 0,
+    webClicks: 0,
+    bookingsCount: 0
+  };
+  try {
+    const db = getFirebaseDb();
+    const snap = await getDoc(doc(db, 'statistics', companyId));
+    if (snap.exists()) {
+      return { ...defaultStats, ...snap.data() } as Statistics;
+    }
+  } catch (e) {
+    console.error('Error fetching statistics:', e);
+  }
+  return defaultStats;
+}

@@ -1,0 +1,320 @@
+import React, { useState } from 'react';
+import { Mail, Lock, User, Building2, Loader2, Eye, EyeOff, Sparkles, ArrowRight, ArrowLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { AuthView } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
+import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { toast } from '@/lib/useToast';
+
+interface Props {
+  onNavigate: (view: AuthView) => void;
+}
+
+export function RegisterForm({ onNavigate }: Props) {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<'client' | 'firma'>('client');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !email.trim() || !password) return;
+    setLoading(true);
+
+    try {
+      const auth = await getFirebaseAuth();
+      const db = await getFirebaseDb();
+      
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      await setDoc(doc(db, 'users', user.uid), {
+        email: user.email,
+        name,
+        role,
+        createdAt: serverTimestamp(),
+      });
+      localStorage.setItem('user_role_' + user.uid, role);
+      localStorage.setItem('has_company_profile_' + user.uid, 'false');
+      toast.success('Konto utworzone', 'Witamy w społeczności LOKALNIE PRO!');
+      if (role === 'firma') {
+        onNavigate('create-company-profile');
+      } else {
+        onNavigate('login');
+      }
+    } catch (err: any) {
+      console.error('Registration error, attempting MySQL fallback:', err);
+      try {
+        const uid = 'usr_' + Date.now();
+        await fetch('/api/mysql/users/insert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: uid, email, name, role, status: 'active' })
+        });
+        localStorage.setItem('user_role_' + uid, role);
+        toast.success('Konto utworzone pomyślnie', 'Witamy w LOKALNIE PRO!');
+        if (role === 'firma') {
+          onNavigate('create-company-profile');
+        } else {
+          onNavigate('login');
+        }
+      } catch (mysqlErr) {
+        if (err.code === 'auth/email-already-in-use') {
+          toast.error('Błąd rejestracji', 'Konto z podanym adresem e-mail już istnieje.');
+        } else {
+          toast.error('Błąd rejestracji', err.message || 'Nie udało się utworzyć konta.');
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculatePasswordStrength = (pass: string) => {
+    let score = 0;
+    if (pass.length >= 6) score += 25;
+    if (pass.length >= 10) score += 25;
+    if (/[A-Z]/.test(pass)) score += 25;
+    if (/[0-9!@#$%^&*]/.test(pass)) score += 25;
+    return score;
+  };
+
+  const strength = calculatePasswordStrength(password);
+  const strengthText = strength <= 25 ? 'Słabe' : strength <= 50 ? 'Średnie' : strength <= 75 ? 'Dobre' : 'Bardzo Silne';
+  const strengthColor = strength <= 25 ? 'bg-rose-500' : strength <= 50 ? 'bg-amber-500' : strength <= 75 ? 'bg-blue-500' : 'bg-emerald-500';
+
+  return (
+    <div className="min-h-screen flex bg-slate-950 font-sans overflow-hidden relative text-slate-100 selection:bg-emerald-500 selection:text-white">
+      {/* Ambient Glow */}
+      <motion.div 
+        animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute top-[-10%] left-[-10%] w-[550px] h-[550px] bg-gradient-to-br from-emerald-600/25 to-teal-600/20 rounded-full blur-[130px] pointer-events-none" 
+      />
+      <motion.div 
+        animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+        className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-gradient-to-tl from-indigo-600/20 via-teal-600/20 to-emerald-600/30 rounded-full blur-[140px] pointer-events-none" 
+      />
+
+      {/* Left Panel */}
+      <motion.div 
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="hidden lg:flex lg:w-1/2 bg-slate-900/40 backdrop-blur-2xl border-r border-slate-800/80 flex-col justify-between p-12 relative overflow-hidden z-10"
+      >
+        <div>
+          <div className="flex items-center gap-3.5 mb-16">
+            <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 via-teal-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-emerald-500/30 ring-1 ring-white/20">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                LOKALNIE <span className="px-2 py-0.5 text-xs font-black bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-md uppercase tracking-wider">PRO</span>
+              </h1>
+              <p className="text-[11px] font-bold text-emerald-300/70 uppercase tracking-widest mt-0.5">Dołącz do ekosystemu</p>
+            </div>
+          </div>
+
+          <div className="space-y-8 max-w-md">
+            <div>
+              <h2 className="text-5xl font-black mb-4 tracking-tight leading-[1.1] bg-gradient-to-r from-white via-slate-100 to-emerald-200 bg-clip-text text-transparent">
+                Stwórz Konto w Portalu
+              </h2>
+              <p className="text-base text-slate-400 font-medium leading-relaxed">
+                Wybierz typ konta i uzyskaj natychmiastowy dostęp do wyszukiwarki, rezerwacji oraz profili zweryfikowanych firm.
+              </p>
+            </div>
+
+            <div className="space-y-3.5 pt-8 border-t border-slate-800/80">
+              {[
+                { title: 'Bezpłatne Konto Mieszkańca / Klienta', desc: 'Rezerwuj terminy u fachowców i zapisuj ulubione oferty' },
+                { title: 'Dla Właścicieli Firm (Partner)', desc: 'Prezentuj swoje usługi, weryfikuj NIP i pozyskuj klientów' },
+                { title: 'Ochrona Danych i Bezpieczeństwo', desc: 'Szyfrowana komunikacja oraz wiarygodny system ocen' },
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/60 backdrop-blur-md">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-200">{item.title}</h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-emerald-950/60 via-slate-900/80 to-teal-950/60 backdrop-blur-xl rounded-3xl p-6 border border-emerald-500/20 shadow-2xl flex justify-between items-center">
+          <div>
+            <h3 className="text-sm font-bold text-white">Posiadasz już konto?</h3>
+            <p className="text-xs text-slate-400 font-medium mt-0.5">Zaloguj się do swojego profilu.</p>
+          </div>
+          <button
+            onClick={() => onNavigate('login')}
+            className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-emerald-500/30 flex items-center gap-1.5 shrink-0 hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            Logowanie <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </motion.div>
+
+      {/* Right Panel - Form */}
+      <motion.div 
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full lg:w-1/2 flex flex-col justify-center p-6 md:p-12 lg:p-16 relative z-10 bg-slate-950/80 backdrop-blur-3xl"
+      >
+        <div className="w-full max-w-md mx-auto space-y-8">
+          <div>
+            <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight mb-2">
+              Utwórz Konto ✨
+            </h2>
+            <p className="text-sm text-slate-400 font-medium">
+              Wypełnij formularz rejestracyjny, aby rozpocząć.
+            </p>
+          </div>
+
+          {/* Role Switcher */}
+          <div className="p-1.5 bg-slate-900 border border-slate-800 rounded-2xl grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => setRole('client')}
+              className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                role === 'client' 
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <User className="w-4 h-4" /> Klient / Mieszkaniec
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('firma')}
+              className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                role === 'firma' 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Building2 className="w-4 h-4" /> Partner / Firma
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                {role === 'firma' ? 'Nazwa Reprezentanta / Imię i Nazwisko' : 'Imię i Nazwisko / Nick'}
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                  <User className="w-5 h-5" />
+                </div>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Jan Kowalski"
+                  required
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all font-medium text-sm shadow-inner"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">Adres Email</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="twoj@email.com"
+                  required
+                  className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all font-medium text-sm shadow-inner"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">Hasło Dostępowe</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                  <Lock className="w-5 h-5" />
+                </div>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  className="w-full pl-12 pr-12 py-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all font-medium text-sm shadow-inner"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+
+              {/* Password Strength Progress Bar */}
+              {password.length > 0 && (
+                <div className="pt-2 space-y-1">
+                  <div className="flex justify-between items-center text-[10px] font-bold">
+                    <span className="text-slate-400">Siła hasła:</span>
+                    <span className="text-slate-200">{strengthText}</span>
+                  </div>
+                  <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                    <div className={`h-full ${strengthColor} transition-all duration-300`} style={{ width: `${strength}%` }} />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full mt-4 py-4 text-white font-black rounded-2xl transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm tracking-wide active:scale-[0.98] cursor-pointer ${
+                role === 'firma'
+                  ? 'bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 hover:from-indigo-600 hover:to-purple-700 shadow-indigo-600/30'
+                  : 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600 hover:from-emerald-600 hover:to-teal-600 shadow-emerald-600/30'
+              }`}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-white" /> Tworzenie Konta...
+                </>
+              ) : (
+                <>
+                  {role === 'firma' ? 'Przejdź do Konfiguracji Profilu Firmy' : 'Zarejestruj Konto'} <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="text-center pt-2">
+            <p className="text-xs text-slate-400 font-medium">
+              Posiadasz już konto?{' '}
+              <button
+                onClick={() => onNavigate('login')}
+                className="text-emerald-400 font-extrabold hover:text-emerald-300 hover:underline transition-colors cursor-pointer"
+              >
+                Zaloguj się
+              </button>
+            </p>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default RegisterForm;

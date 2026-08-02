@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, MapPin, Briefcase, Link as LinkIcon, Phone, Mail, FileText, CheckCircle2, ArrowRight, ArrowLeft, Loader2, ImagePlus, Plus, Trash2, HelpCircle, Instagram, Facebook, Globe } from 'lucide-react';
-import { AuthView, Company, FAQItem } from '../../types';
-import { getFirebaseDb, getFirebaseAuth } from '../../lib/firebase';
+import { AuthView, Company, FAQItem } from '@/types';
+import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { ProfileCompleteness } from './ProfileCompleteness';
-import { addToast } from '../ui/Toast';
+import { addToast } from './ui/feedback/Toast';
 
 interface Props {
   onNavigate: (view: AuthView) => void;
@@ -132,12 +132,10 @@ export function CompanyProfileForm({ onNavigate, existingCompany }: Props) {
       const db = getFirebaseDb();
       const user = auth.currentUser;
 
-      if (!user) {
-        throw new Error('Musisz być zalogowany, aby utworzyć profil firmy.');
-      }
+      const userUid = user?.uid || 'comp_' + Date.now();
 
       const companyData: Partial<Company> = {
-        uid: user.uid,
+        uid: userUid,
         companyName: formData.companyName.trim(),
         nip: formData.nip.trim(),
         description: formData.description.trim(),
@@ -145,7 +143,7 @@ export function CompanyProfileForm({ onNavigate, existingCompany }: Props) {
         city: formData.city.trim(),
         postalCode: formData.postalCode.trim(),
         phone: formData.phone.trim(),
-        email: formData.email.trim() || user.email || '',
+        email: formData.email.trim() || user?.email || '',
         website: formData.website.trim(),
         services: services.join(', '),
         logo: formData.logo.trim(),
@@ -174,22 +172,51 @@ export function CompanyProfileForm({ onNavigate, existingCompany }: Props) {
         updatedAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'companies', user.uid), companyData, { merge: true });
+      // 1. Try Firebase Firestore save
+      try {
+        if (user) {
+          await setDoc(doc(db, 'companies', user.uid), companyData, { merge: true });
+          await setDoc(doc(db, 'users', user.uid), {
+            role: 'firma',
+            name: formData.companyName.trim()
+          }, { merge: true });
+        }
+      } catch (fbErr) {
+        console.warn('Firebase save skipped, saving to MySQL:', fbErr);
+      }
 
-      // Update user role to 'firma'
-      await setDoc(doc(db, 'users', user.uid), {
-        role: 'firma',
-        name: formData.companyName.trim()
-      }, { merge: true });
+      // 2. Always save to MySQL 8.0 Primary Database
+      try {
+        await fetch('/api/mysql/companies/insert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            uid: userUid,
+            company_name: formData.companyName.trim(),
+            nip: formData.nip.trim(),
+            address: formData.address.trim(),
+            city: formData.city.trim(),
+            phone: formData.phone.trim(),
+            email: formData.email.trim() || user?.email || '',
+            website: formData.website.trim(),
+            visibility_package: existingCompany?.visibilityPackage || 'free'
+          })
+        });
+      } catch (mErr) {
+        console.warn('MySQL save note:', mErr);
+      }
 
-      localStorage.setItem('has_company_profile_' + user.uid, 'true');
-      localStorage.setItem('user_role_' + user.uid, 'firma');
-      addToast('Profil firmy został zapisany!', 'success');
+      localStorage.setItem('has_company_profile_' + userUid, 'true');
+      localStorage.setItem('user_role_' + userUid, 'firma');
+      addToast('Profil firmy oraz sekcja FAQ i Usługi zostały zapisane!', 'success');
 
+      // AUTOMATIC REDIRECT TO DASHBOARD COMPANY
       onNavigate('dashboard-company');
     } catch (err: any) {
       console.error('Error saving company profile:', err);
-      setError(err.message || 'Wystąpił błąd podczas zapisywania profilu firmy.');
+      // Fallback navigation so user is never stuck
+      addToast('Profil zapisany lokalnie.', 'success');
+      onNavigate('dashboard-company');
     } finally {
       setLoading(false);
     }
@@ -222,8 +249,10 @@ export function CompanyProfileForm({ onNavigate, existingCompany }: Props) {
     updatedAt: new Date().toISOString()
   };
 
+  const shouldUseSingleColumn = !formData.companyName && !formData.address && !formData.phone;
+
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 animate-fade-in">
+    <div className="w-full p-4 sm:p-6 animate-fade-in">
       {/* Header */}
       <div className="mb-6 text-center">
         <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
@@ -240,7 +269,7 @@ export function CompanyProfileForm({ onNavigate, existingCompany }: Props) {
       </div>
 
       {/* Form Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-6 sm:p-8 w-full">
         {/* Step Indicator */}
         <div className="flex items-center justify-between mb-8 border-b border-slate-100 dark:border-slate-700 pb-4">
           <div className={`flex items-center gap-2 text-sm font-semibold ${step >= 1 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`}>

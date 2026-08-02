@@ -1,4 +1,4 @@
-import { Company, UserHistoryItem, FavoriteCompany } from '../types';
+import { Company, UserHistoryItem, FavoriteCompany } from '@/types';
 import { calculateDistance } from './RankingEngine';
 
 export interface RecommendationResult {

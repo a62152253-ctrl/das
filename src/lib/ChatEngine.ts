@@ -12,7 +12,7 @@ import {
   setDoc, 
   getDoc 
 } from 'firebase/firestore';
-import { Conversation, Message } from '../types';
+import { Conversation, Message } from '@/types';
 import { createNotification } from './NotificationEngine';
 
 export function getConversationId(userId1: string, userId2: string): string {

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Send, Filter, Image, CornerDownRight, ThumbsUp, Loader2 } from 'lucide-react';
-import { Review } from '../../types';
+import { Review } from '@/types';
 import { useAuth } from '../../lib/AuthContext';
-import { getFirebaseDb } from '../../lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { createNotification } from '../../lib/NotificationEngine';
 

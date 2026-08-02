@@ -9,7 +9,7 @@ import {
   orderBy, 
   onSnapshot 
 } from 'firebase/firestore';
-import { Notification } from '../types';
+import { Notification } from '@/types';
 
 export async function createNotification(
   notif: Omit<Notification, 'id' | 'createdAt' | 'read'>

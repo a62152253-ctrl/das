@@ -5,17 +5,17 @@ import {
   ShieldCheck, Check, Copy, ChevronDown, ChevronUp, Clock, 
   CreditCard, Sparkles, MessageSquare, Info, Heart, ArrowLeft, Share2, ArrowUpRight
 } from 'lucide-react';
-import { Company, Service, Promotion, Review, FavoriteCompany } from '../../types';
+import { Company, Service, Promotion, Review, FavoriteCompany } from '@/types';
 import { fetchSearchData } from '../../lib/SearchEngine';
 import { useAuth } from '../../lib/AuthContext';
 import { recordCompanyView, recordCompanyClick } from '../../lib/AnalyticsEngine';
 import { recordHistoryItem } from '../../lib/HistoryEngine';
 import { toggleFavoriteCompany, subscribeUserFavorites } from '../../lib/FavoritesEngine';
 import { getOrCreateConversation } from '../../lib/ChatEngine';
-import { BookingModal } from '../booking/BookingModal';
-import { CompanyReviews } from '../reviews/CompanyReviews';
-import { SkeletonProfile } from '../ui/Skeleton';
-import { addToast } from '../ui/Toast';
+import { BookingModal } from './booking/BookingModal';
+import { CompanyReviews } from './reviews/CompanyReviews';
+import { SkeletonProfile } from './ui/progress/Skeleton';
+import { addToast } from './ui/feedback/Toast';
 
 interface Props {
   companyId: string;
@@ -77,7 +77,10 @@ export function CompanyPublicProfile({ companyId, onBack, onOpenChat }: Props) {
   }, [user, companyId]);
 
   const handleToggleFav = async () => {
-    if (!user || !company) return;
+    if (!user || !company) {
+      addToast('Zaloguj się, aby zapisać firmę w ulubionych.', 'info');
+      return;
+    }
     const newFavStatus = await toggleFavoriteCompany(user.uid, company, userFavorites);
     setIsFavorited(newFavStatus);
     addToast(newFavStatus ? 'Dodano firmę do ulubionych!' : 'Usunięto z ulubionych.', newFavStatus ? 'success' : 'info');
@@ -100,10 +103,17 @@ export function CompanyPublicProfile({ companyId, onBack, onOpenChat }: Props) {
   };
 
   const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    addToast(`Skopiowano kod promocyjny: ${code}`, 'success');
-    setTimeout(() => setCopiedCode(null), 2000);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        setCopiedCode(code);
+        addToast(`Skopiowano kod promocyjny: ${code}`, 'success');
+        setTimeout(() => setCopiedCode(null), 2000);
+      }).catch(() => {
+        addToast('Nie udało się skopiować kodu. Spróbuj ponownie.', 'error');
+      });
+    } else {
+      addToast('Twoja przeglądarka nie obsługuje kopiowania kodu.', 'error');
+    }
   };
 
   const handleShare = () => {

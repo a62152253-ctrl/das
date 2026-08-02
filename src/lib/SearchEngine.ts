@@ -1,6 +1,6 @@
 import { getFirebaseDb } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import { Company, Service, Ad, Promotion } from '../types';
+import { Company, Service, Ad, Promotion } from '@/types';
 import { calculateScore, SearchResultItem } from './RankingEngine';
 import { analyzeSearchQuery } from './AISearchEngine';
 

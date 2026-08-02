@@ -1,6 +1,6 @@
 import { getFirebaseDb } from './firebase';
 import { collection, addDoc, query, where, limit, onSnapshot } from 'firebase/firestore';
-import { UserHistoryItem } from '../types';
+import { UserHistoryItem } from '@/types';
 
 export async function recordHistoryItem(
   userId: string,

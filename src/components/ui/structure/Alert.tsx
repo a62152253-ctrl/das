@@ -1,0 +1,121 @@
+import React, { ReactNode } from 'react';
+import { motion } from 'framer-motion';
+import { X, AlertCircle, CheckCircle, InfoIcon, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+type AlertVariant = 'success' | 'error' | 'warning' | 'info';
+
+interface AlertProps {
+  variant?: AlertVariant;
+  title?: string;
+  description?: ReactNode;
+  onClose?: () => void;
+  closeable?: boolean;
+  icon?: React.ReactNode;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  className?: string;
+}
+
+const variantConfig = {
+  success: {
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800',
+    icon: <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />,
+    titleColor: 'text-emerald-900 dark:text-emerald-200',
+    textColor: 'text-emerald-800 dark:text-emerald-300',
+    actionBg: 'hover:bg-emerald-100 dark:hover:bg-emerald-900/50'
+  },
+  error: {
+    bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800',
+    icon: <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />,
+    titleColor: 'text-rose-900 dark:text-rose-200',
+    textColor: 'text-rose-800 dark:text-rose-300',
+    actionBg: 'hover:bg-rose-100 dark:hover:bg-rose-900/50'
+  },
+  warning: {
+    bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800',
+    icon: <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />,
+    titleColor: 'text-amber-900 dark:text-amber-200',
+    textColor: 'text-amber-800 dark:text-amber-300',
+    actionBg: 'hover:bg-amber-100 dark:hover:bg-amber-900/50'
+  },
+  info: {
+    bg: 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-800',
+    icon: <InfoIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />,
+    titleColor: 'text-indigo-900 dark:text-indigo-200',
+    textColor: 'text-indigo-800 dark:text-indigo-300',
+    actionBg: 'hover:bg-indigo-100 dark:hover:bg-indigo-900/50'
+  }
+};
+
+export const Alert: React.FC<AlertProps> = ({
+  variant = 'info',
+  title,
+  description,
+  onClose,
+  closeable = true,
+  icon,
+  action,
+  className
+}) => {
+  const config = variantConfig[variant];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={cn(
+        'flex items-start gap-4 p-4 rounded-xl border',
+        config.bg,
+        className
+      )}
+    >
+      <div className="shrink-0 pt-0.5">
+        {icon || config.icon}
+      </div>
+
+      <div className="flex-1 min-w-0">
+        {title && (
+          <h4 className={cn('font-semibold text-sm', config.titleColor)}>
+            {title}
+          </h4>
+        )}
+        {description && (
+          <p className={cn('text-sm mt-1', config.textColor, { 'mt-0': !title })}>
+            {description}
+          </p>
+        )}
+        {action && (
+          <button
+            onClick={action.onClick}
+            className={cn(
+              'mt-3 text-sm font-semibold px-3 py-1 rounded-lg transition-colors',
+              config.textColor,
+              config.actionBg
+            )}
+          >
+            {action.label}
+          </button>
+        )}
+      </div>
+
+      {closeable && onClose && (
+        <button
+          onClick={onClose}
+          className={cn(
+            'shrink-0 p-1 rounded-lg transition-colors cursor-pointer',
+            config.textColor,
+            config.actionBg
+          )}
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </motion.div>
+  );
+};
+
+export type { AlertProps };

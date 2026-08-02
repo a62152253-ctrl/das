@@ -42,12 +42,21 @@ export function useToast() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
+    const handleToastUpdate = (updatedToasts: ToastMessage[]) => {
+      setToasts(updatedToasts);
+    };
+
     setToasts([...toastQueue]);
-    listeners.push(setToasts);
+    listeners.push(handleToastUpdate);
+    
     return () => {
-      listeners = listeners.filter(l => l !== setToasts);
+      listeners = listeners.filter(l => l !== handleToastUpdate);
     };
   }, []);
 
-  return { toasts, removeToast: toast.remove };
+  const removeToast = useCallback((id: string) => {
+    toast.remove(id);
+  }, []);
+
+  return { toasts, removeToast };
 }

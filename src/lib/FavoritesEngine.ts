@@ -9,7 +9,7 @@ import {
   getDocs, 
   onSnapshot 
 } from 'firebase/firestore';
-import { FavoriteCompany, Company } from '../types';
+import { FavoriteCompany, Company } from '@/types';
 
 export async function toggleFavoriteCompany(
   userId: string,

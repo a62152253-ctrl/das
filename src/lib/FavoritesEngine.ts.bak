@@ -1,0 +1,67 @@
+import { getFirebaseDb } from './firebase';
+import { 
+  collection, 
+  addDoc, 
+  deleteDoc, 
+  doc, 
+  query, 
+  where, 
+  getDocs, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { FavoriteCompany, Company } from '../types';
+
+export async function toggleFavoriteCompany(
+  userId: string,
+  company: Company,
+  currentFavorites: FavoriteCompany[]
+): Promise<boolean> {
+  const db = getFirebaseDb();
+  const existing = currentFavorites.find(f => f.companyId === company.uid);
+
+  if (existing) {
+    // Remove favorite
+    await deleteDoc(doc(db, 'favorites', existing.id));
+    return false; // Now unfavorited
+  } else {
+    // Add favorite
+    await addDoc(collection(db, 'favorites'), {
+      userId,
+      companyId: company.uid,
+      companyName: company.companyName,
+      category: company.services ? company.services.split(',')[0].trim() : 'Usługi',
+      city: company.city,
+      rating: company.rating || 0,
+      logo: company.logo || company.mainPhoto || '',
+      createdAt: new Date().toISOString()
+    });
+    return true; // Now favorited
+  }
+}
+
+export function subscribeUserFavorites(
+  userId: string,
+  callback: (favorites: FavoriteCompany[]) => void
+) {
+  if (!userId) {
+    callback([]);
+    return () => {};
+  }
+  const db = getFirebaseDb();
+  const q = query(
+    collection(db, 'favorites'),
+    where('userId', '==', userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const list: FavoriteCompany[] = snapshot.docs.map(d => ({
+      id: d.id,
+      ...d.data()
+    } as FavoriteCompany));
+    list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    callback(list);
+  }, (err) => {
+    console.error('Error listening to favorites:', err);
+    callback([]);
+  });
+}

@@ -1,4 +1,4 @@
-import { Company } from '../types';
+import { Company } from '@/types';
 
 export function getRecommendedCompanies(companies: Company[]): Company[] {
   const searchLogsStr = localStorage.getItem('lokalnie_search_logs');

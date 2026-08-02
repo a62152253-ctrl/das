@@ -1,0 +1,521 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { SearchResultItem } from '../../../lib/RankingEngine';
+import { SearchSortOption } from '../../../lib/SearchEngine';
+import { Star, MapPin, Tag, Briefcase, FileText, ExternalLink, Heart, Share2, ArrowUpDown, Sparkles, Filter, X, Grid3x3, List, Zap, TrendingUp, Users, AlertCircle, Flame, Clock, DollarSign, Award } from 'lucide-react';
+import { addToast, Button, Badge } from '@/ui';
+import { motion, AnimatePresence } from 'framer-motion';
+
+interface Props {
+  results: SearchResultItem[];
+  query?: string;
+  onSelectCompany: (companyId: string) => void;
+  onContactCompany?: (companyId: string, companyName: string) => void;
+}
+
+export function SearchResults({ results, onSelectCompany, onContactCompany, query }: Props) {
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [minRatingFilter, setMinRatingFilter] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<SearchSortOption>('relevance');
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lokalnie_favorite_ids');
+      if (saved) setFavorites(JSON.parse(saved));
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const typeStats = useMemo(() => ({
+    all: results.length,
+    company: results.filter(r => r.type === 'company').length,
+    service: results.filter(r => r.type === 'service').length,
+    ad: results.filter(r => r.type === 'ad').length,
+    promotion: results.filter(r => r.type === 'promotion').length
+  }), [results]);
+
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    let updated: string[];
+    if (favorites.includes(id)) {
+      updated = favorites.filter(f => f !== id);
+      addToast('Usunięto z ulubionych', 'info');
+    } else {
+      updated = [...favorites, id];
+      addToast('Dodano do ulubionych!', 'success');
+    }
+    setFavorites(updated);
+    localStorage.setItem('lokalnie_favorite_ids', JSON.stringify(updated));
+  };
+
+  const handleShare = (title: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(window.location.href);
+    addToast(`Skopiowano link do schowka.`, 'success');
+  };
+
+  const filteredResults = results.filter(r => {
+    if (selectedType !== 'all' && r.type !== selectedType) return false;
+    if (minRatingFilter > 0 && (r.rating || 0) < minRatingFilter) return false;
+    return true;
+  });
+
+  const sortedResults = [...filteredResults].sort((a, b) => {
+    if (sortBy === 'rating') return b.rating - a.rating || b.score - a.score;
+    if (sortBy === 'distance') return (a.distance ?? 999) - (b.distance ?? 999);
+    if (sortBy === 'price_asc') return (a.price ?? 999999) - (b.price ?? 999999);
+    if (sortBy === 'price_desc') return (b.price ?? 0) - (a.price ?? 0);
+    return b.score - a.score;
+  });
+
+  if (results.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center py-24 px-6"
+      >
+        <div className="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 text-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+          <MapPin className="w-10 h-10" />
+        </div>
+        <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3">Brak wyników</h3>
+        <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto">
+          Nie znaleźliśmy dopasowanych ofert dla "<span className="font-bold">{query || 'tego zapytania'}</span>"
+        </p>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-between flex-wrap gap-4"
+      >
+        <div>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+            Wyniki wyszukiwania
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Znaleziono <span className="font-bold text-indigo-600 dark:text-indigo-400">{sortedResults.length}</span> ofert
+          </p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="flex items-center gap-6">
+          <div className="text-center">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{results.filter(r => (r.rating || 0) >= 4.5).length}</div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 flex items-center gap-1">
+              <Star className="w-3 h-3" /> Rekomendowane
+            </p>
+          </div>
+          <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
+          <div className="text-center">
+            <div className="text-2xl font-black text-slate-900 dark:text-white">{typeStats.company}</div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Firmy</p>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Filters & View Controls */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 flex flex-wrap items-center justify-between gap-4"
+      >
+        {/* Type Filter */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {[
+            { id: 'all', label: 'Wszystkie', count: typeStats.all },
+            { id: 'company', label: 'Firmy', count: typeStats.company },
+            { id: 'service', label: 'Usługi', count: typeStats.service },
+            { id: 'ad', label: 'Ogłoszenia', count: typeStats.ad },
+            { id: 'promotion', label: 'Promocje', count: typeStats.promotion }
+          ].map(type => (
+            <motion.button
+              key={type.id}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSelectedType(type.id)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                selectedType === type.id
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
+                  : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+              }`}
+            >
+              {type.label} <span className="ml-1 opacity-75">({type.count})</span>
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Right Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Rating Filter */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setMinRatingFilter(minRatingFilter === 4.5 ? 0 : 4.5)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+              minRatingFilter === 4.5
+                ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-400'
+                : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            <Star className="w-3.5 h-3.5 fill-current" />
+            4.5+
+          </motion.button>
+
+          {/* Sort */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SearchSortOption)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+          >
+            <option value="relevance">Trafność</option>
+            <option value="rating">Ocena</option>
+            <option value="distance">Dystans</option>
+            <option value="price_asc">Cena: rosnąco</option>
+            <option value="price_desc">Cena: malejąco</option>
+          </select>
+
+          {/* View Mode */}
+          <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded transition-all cursor-pointer ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded transition-all cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-slate-600 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                  : 'text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              <Grid3x3 className="w-4 h-4" />
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Results Grid/List */}
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5' : 'space-y-4'}>
+        <AnimatePresence mode="popLayout">
+          {sortedResults.map((result, idx) => {
+            const isFav = favorites.includes(result.id);
+            const isSponsored = result.isSponsored;
+
+            const CardContent = () => (
+              <>
+                {/* Image Container */}
+                <div className="relative h-40 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 flex items-center justify-center overflow-hidden group-hover:from-slate-200 group-hover:to-slate-300 transition-colors">
+                  {result.type === 'company' && result.item.mainPhoto ? (
+                    <img src={result.item.mainPhoto} alt={result.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                  ) : (
+                    <div className={`text-6xl opacity-20 ${
+                      result.type === 'service' ? '' :
+                      result.type === 'ad' ? '' :
+                      result.type === 'promotion' ? '' : ''
+                    }`}>
+                      {result.type === 'service' && '🔧'}
+                      {result.type === 'ad' && '📰'}
+                      {result.type === 'promotion' && '🎉'}
+                      {result.type === 'company' && '🏢'}
+                    </div>
+                  )}
+
+                  {/* Favorite Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {e.stopPropagation(); toggleFavorite(result.id, e);}}
+                    className={`absolute top-3 right-3 p-2 rounded-full transition-all shadow-md backdrop-blur-sm ${
+                      isFav 
+                        ? 'bg-rose-500 text-white' 
+                        : 'bg-white/80 dark:bg-slate-900/80 text-slate-400 hover:text-rose-500 hover:bg-white'
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${isFav ? 'fill-white' : ''}`} />
+                  </motion.button>
+
+                  {/* Sponsored Badge */}
+                  {isSponsored && (
+                    <div className="absolute top-3 left-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                      <Flame className="w-3 h-3" /> WYRÓŻNIONE
+                    </div>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className={viewMode === 'grid' ? 'p-4 flex flex-col flex-1' : 'p-5 md:p-6 flex-1'}>
+                  <div>
+                    {/* Badge & Rating */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <Badge 
+                        variant={
+                          result.type === 'service' ? 'primary' :
+                          result.type === 'ad' ? 'success' :
+                          result.type === 'promotion' ? 'warning' : 'neutral'
+                        } 
+                        size={viewMode === 'grid' ? 'sm' : 'md'}
+                      >
+                        {result.badgeText}
+                      </Badge>
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400">{result.rating?.toFixed(1) || '5.0'}</span>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h3 className={`font-bold text-slate-900 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2 ${
+                      viewMode === 'grid' ? 'text-sm' : 'text-lg'
+                    }`}>
+                      {result.title}
+                    </h3>
+
+                    {/* Company Name for non-company results */}
+                    {result.type !== 'company' && (
+                      <button
+                        onClick={() => onSelectCompany(result.companyId)}
+                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline mb-2 cursor-pointer"
+                      >
+                        {result.companyName} →
+                      </button>
+                    )}
+
+                    {/* Description */}
+                    <p className="text-slate-600 dark:text-slate-400 text-xs mb-4 line-clamp-2">
+                      {result.description}
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className={`pt-3 border-t border-slate-100 dark:border-slate-700 ${viewMode === 'grid' ? 'space-y-3' : ''}`}>
+                    {/* Stats Row */}
+                    <div className={viewMode === 'grid' ? 'space-y-2' : 'flex items-center gap-6 mb-3 flex-wrap'}>
+                      {result.price && (
+                        <div className={viewMode === 'grid' ? '' : 'text-sm'}>
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Cena</span>
+                          <span className="text-lg font-black text-slate-900 dark:text-white">{result.price} zł</span>
+                        </div>
+                      )}
+                      {result.distance && (
+                        <div className={viewMode === 'grid' ? '' : 'text-sm flex items-center gap-1'}>
+                          <MapPin className="w-3 h-3 text-indigo-500" />
+                          <span className={viewMode === 'grid' ? 'text-xs font-bold text-slate-600 dark:text-slate-400' : 'font-bold text-slate-700 dark:text-slate-300'}>
+                            {result.distance.toFixed(1)} km
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    {viewMode === 'list' && (
+                      <div className="flex items-center justify-between gap-2">
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          onClick={(e) => handleShare(result.title, e)}
+                          className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Share2 className="w-4 h-4" />
+                        </motion.button>
+                        <Button
+                          size="sm"
+                          onClick={() => onSelectCompany(result.companyId)}
+                          rightIcon={ExternalLink}
+                        >
+                          Szczegóły
+                        </Button>
+                      </div>
+                    )}
+
+                    {viewMode === 'grid' && (
+                      <Button
+                        size="sm"
+                        fullWidth
+                        onClick={() => onSelectCompany(result.companyId)}
+                      >
+                        Szczegóły
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </>
+            );
+
+            if (viewMode === 'grid') {
+              return (
+                <motion.div
+                  key={result.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ delay: idx * 0.03 }}
+                  onClick={() => onSelectCompany(result.companyId)}
+                  className={`group rounded-2xl border overflow-hidden transition-all duration-300 cursor-pointer flex flex-col h-full ${
+                    isSponsored
+                      ? 'border-indigo-400 dark:border-indigo-600 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/30 dark:to-slate-900 shadow-md shadow-indigo-500/20'
+                      : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-lg'
+                  }`}
+                >
+                  <CardContent />
+                </motion.div>
+              );
+            }
+
+            return (
+              <motion.div
+                key={result.id}
+                layout
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ delay: idx * 0.03 }}
+                onClick={() => onSelectCompany(result.companyId)}
+                className={`group rounded-2xl border overflow-hidden transition-all duration-300 cursor-pointer flex flex-col sm:flex-row ${
+                  isSponsored
+                    ? 'border-indigo-400 dark:border-indigo-600 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-950/30 dark:to-slate-900 shadow-md shadow-indigo-500/20'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-lg'
+                }`}
+              >
+                <div className="w-full sm:w-48 flex-shrink-0">
+                  <div className="relative h-32 sm:h-full bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-950 flex items-center justify-center overflow-hidden group-hover:from-slate-200 group-hover:to-slate-300 transition-colors">
+                    {result.type === 'company' && result.item.mainPhoto ? (
+                      <img src={result.item.mainPhoto} alt={result.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    ) : (
+                      <div className="text-5xl opacity-20">
+                        {result.type === 'service' && '🔧'}
+                        {result.type === 'ad' && '📰'}
+                        {result.type === 'promotion' && '🎉'}
+                        {result.type === 'company' && '🏢'}
+                      </div>
+                    )}
+
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {e.stopPropagation(); toggleFavorite(result.id, e);}}
+                      className={`absolute top-3 left-3 p-2 rounded-full transition-all shadow-md backdrop-blur-sm ${
+                        isFav 
+                          ? 'bg-rose-500 text-white' 
+                          : 'bg-white/80 dark:bg-slate-900/80 text-slate-400 hover:text-rose-500 hover:bg-white'
+                      }`}
+                    >
+                      <Heart className={`w-4 h-4 ${isFav ? 'fill-white' : ''}`} />
+                    </motion.button>
+
+                    {isSponsored && (
+                      <div className="absolute top-3 right-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-lg">
+                        <Flame className="w-3 h-3" /> WYRÓŻNIONE
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex-1 p-5 md:p-6 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <Badge 
+                        variant={
+                          result.type === 'service' ? 'primary' :
+                          result.type === 'ad' ? 'success' :
+                          result.type === 'promotion' ? 'warning' : 'neutral'
+                        } 
+                        size="md"
+                      >
+                        {result.badgeText}
+                      </Badge>
+                      <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400">{result.rating?.toFixed(1) || '5.0'}</span>
+                      </div>
+                    </div>
+
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
+                      {result.title}
+                    </h3>
+
+                    {result.type !== 'company' && (
+                      <button
+                        onClick={() => onSelectCompany(result.companyId)}
+                        className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline mb-3 cursor-pointer"
+                      >
+                        {result.companyName} →
+                      </button>
+                    )}
+
+                    <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed line-clamp-2">
+                      {result.description}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-6">
+                      {result.price && (
+                        <div className="text-sm">
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Cena</span>
+                          <span className="text-xl font-black text-slate-900 dark:text-white">{result.price} zł</span>
+                        </div>
+                      )}
+                      {result.distance && (
+                        <div className="text-sm flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-indigo-500" />
+                          <div>
+                            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase block">Dystans</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-300">{result.distance.toFixed(1)} km</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        onClick={(e) => handleShare(result.title, e)}
+                        className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </motion.button>
+                      <Button
+                        size="sm"
+                        onClick={() => onSelectCompany(result.companyId)}
+                        rightIcon={ExternalLink}
+                      >
+                        Szczegóły
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+
+      {/* Results Info */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center py-6 text-sm text-slate-600 dark:text-slate-400"
+      >
+        Wyświetlanie <span className="font-bold text-slate-900 dark:text-white">{sortedResults.length}</span> z <span className="font-bold text-slate-900 dark:text-white">{results.length}</span> wyników
+      </motion.div>
+    </div>
+  );
+}

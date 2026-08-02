@@ -1,6 +1,6 @@
 import { getFirebaseDb } from './firebase';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
-import { Statistics } from '../types';
+import { Statistics } from '@/types';
 
 export async function recordCompanyView(companyId: string): Promise<void> {
   if (!companyId) return;

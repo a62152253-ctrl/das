@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Company, Service, Booking } from '../../types';
+import { Company, Service, Booking } from '@/types';
 import { generateAvailableSlots, calculateEndTime, createBooking } from '../../lib/BookingEngine';
-import { getFirebaseDb } from '../../lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useAuth } from '../../lib/AuthContext';
 import { Calendar, Clock, X, Check, User, Phone, Mail, AlertCircle } from 'lucide-react';
-import { addToast } from '../ui/Toast';
+import { addToast } from '../ui/feedback/Toast';
 
 interface BookingModalProps {
   company: Company;
@@ -82,7 +82,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
       return;
     }
     const slots = generateAvailableSlots(company, selectedDate, existingBookings, durationMin);
-    setAvailableSlots(slots);
+    setAvailableSlots(slots.sort((a, b) => a.localeCompare(b, 'pl', { numeric: true })));
     if (!slots.includes(selectedTime)) {
       setSelectedTime('');
     }

@@ -3,10 +3,18 @@ import { User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { initFirebase } from './firebase';
 
-interface UserProfile {
+export interface UserProfile {
   name: string;
   role: 'client' | 'firma' | 'admin';
   email: string;
+}
+
+export interface SessionPayload {
+  uid: string;
+  email: string;
+  role: 'client' | 'firma' | 'admin';
+  name?: string;
+  companyName?: string;
 }
 
 interface AuthContextType {
@@ -16,6 +24,7 @@ interface AuthContextType {
   loading: boolean;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  setSession: (session: SessionPayload) => void;
   logout: () => Promise<void>;
 }
 
@@ -26,6 +35,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   theme: 'light',
   toggleTheme: () => {},
+  setSession: () => {},
   logout: async () => {},
 });
 
@@ -57,15 +67,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  const setSession = (sess: SessionPayload) => {
+    localStorage.setItem('active_user_session', JSON.stringify(sess));
+    localStorage.setItem('user_role_' + sess.uid, sess.role);
+    if (sess.role === 'firma') {
+      localStorage.setItem('has_company_profile_' + sess.uid, 'true');
+      setHasCompanyProfile(true);
+    }
+    setUser({ uid: sess.uid, email: sess.email, displayName: sess.name || sess.companyName || 'Użytkownik' } as User);
+    setProfile({
+      name: sess.name || sess.companyName || 'Użytkownik',
+      role: sess.role,
+      email: sess.email
+    });
+    setLoading(false);
+  };
+
   useEffect(() => {
     let unsubscribeAuth = () => {};
     let unsubscribeProfile = () => {};
     let unsubscribeCompany = () => {};
     
-    // Safety timeout in case Firebase hangs
     const safetyTimeout = setTimeout(() => {
       setLoading(false);
-    }, 5000);
+    }, 3000);
+
+    // Multi-tab sync: listen for session changes from other tabs
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'active_user_session') {
+        if (e.newValue) {
+          try {
+            const sess = JSON.parse(e.newValue);
+            if (sess && sess.uid) {
+              setUser({ uid: sess.uid, email: sess.email, displayName: sess.name } as User);
+              setProfile({
+                name: sess.name || 'Użytkownik',
+                role: sess.role || 'client',
+                email: sess.email || ''
+              });
+              if (sess.role === 'firma') {
+                setHasCompanyProfile(true);
+              }
+            }
+          } catch (e) {}
+        } else {
+          // Session was cleared in another tab
+          setUser(null);
+          setProfile(null);
+          setHasCompanyProfile(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
 
     const handleCompanySnapshot = (currentUserUid: string) => (companySnap: any) => {
       const exists = companySnap.exists();
@@ -75,7 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const handleCompanyError = (currentUserUid: string) => (error: any) => {
-      console.error("Error fetching company profile, defaulting to cached value:", error);
       const cachedHasProfile = localStorage.getItem('has_company_profile_' + currentUserUid) === 'true';
       setHasCompanyProfile(cachedHasProfile);
       setLoading(false);
@@ -86,8 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (docSnap.exists()) {
         const userData = docSnap.data() as UserProfile;
         setProfile(userData);
-        
-        // Cache user role
         localStorage.setItem('user_role_' + currentUser.uid, userData.role);
         
         if (userData.role === 'firma') {
@@ -102,35 +153,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setLoading(false);
         }
       } else {
-        setProfile(null);
-        setHasCompanyProfile(null);
         setLoading(false);
       }
     };
 
     const handleProfileError = (currentUser: User, cachedRole: any) => (error: any) => {
       clearTimeout(safetyTimeout);
-      console.error("Error fetching user profile:", error);
-      if (!cachedRole) {
-        setProfile(null);
-        setHasCompanyProfile(null);
-      }
       setLoading(false);
     };
 
     const setupAuth = async () => {
+      // Check persistent active_user_session for instant auto-login
+      const savedSession = localStorage.getItem('active_user_session');
+      if (savedSession) {
+        try {
+          const sess = JSON.parse(savedSession);
+          if (sess && sess.uid) {
+            setUser({ uid: sess.uid, email: sess.email, displayName: sess.name } as User);
+            setProfile({
+              name: sess.name || 'Użytkownik',
+              role: sess.role || 'client',
+              email: sess.email || ''
+            });
+            if (sess.role === 'firma') {
+              setHasCompanyProfile(true);
+            }
+            setLoading(false);
+          }
+        } catch (e) {}
+      }
+
       try {
         const { auth, db } = await initFirebase();
         unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-          setLoading(true);
-          setUser(currentUser);
-          
-          // Clear previous listeners
-          unsubscribeProfile();
-          unsubscribeCompany();
-          
           if (currentUser) {
-            // Read cached role synchronously to support offline startup
+            setLoading(true);
+            setUser(currentUser);
+            
+            unsubscribeProfile();
+            unsubscribeCompany();
+
             const cachedRole = localStorage.getItem('user_role_' + currentUser.uid) as 'client' | 'firma' | 'admin' | null;
             if (cachedRole) {
               setProfile({
@@ -149,16 +211,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               handleProfileSnapshot(currentUser, cachedRole, db),
               handleProfileError(currentUser, cachedRole)
             );
-          } else {
+          } else if (!savedSession) {
             clearTimeout(safetyTimeout);
+            setUser(null);
             setProfile(null);
             setHasCompanyProfile(null);
+            setLoading(false);
+          } else {
             setLoading(false);
           }
         });
       } catch (error) {
         clearTimeout(safetyTimeout);
-        console.error('Auth setup failed:', error);
         setLoading(false);
       }
     };
@@ -167,6 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       clearTimeout(safetyTimeout);
+      window.removeEventListener('storage', handleStorageChange);
       unsubscribeAuth();
       unsubscribeProfile();
       unsubscribeCompany();
@@ -174,16 +239,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const logout = async () => {
+    localStorage.removeItem('active_user_session');
+    localStorage.removeItem('adminToken');
     try {
       const { auth } = await initFirebase();
       await signOut(auth);
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
+    } catch (error) {}
+    setUser(null);
+    setProfile(null);
+    setHasCompanyProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, hasCompanyProfile, loading, theme, toggleTheme, logout }}>
+    <AuthContext.Provider value={{ user, profile, hasCompanyProfile, loading, theme, toggleTheme, setSession, logout }}>
       {children}
     </AuthContext.Provider>
   );

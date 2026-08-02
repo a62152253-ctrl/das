@@ -1,24 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../lib/AuthContext';
-import { getFirebaseDb } from '../../lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { doc, getDoc, setDoc, query, collection, where, getDocs, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
-import { Loader2, Award, BarChart3, Building2, ClipboardList, Tag, Image, MessageSquare, Sparkles, Settings, Calendar, Eye } from 'lucide-react';
-import { Company, Service, Ad, Promotion, Review, Statistics, Conversation } from '../../types';
-import { Sidebar } from '../common/Sidebar';
+import { 
+  Loader2, Award, BarChart3, Building2, ClipboardList, Tag, Image, MessageSquare, 
+  Sparkles, Settings, Calendar, Eye, TrendingUp, Users, Clock, Zap, Download, 
+  Share2, Bell, CheckCircle2, AlertCircle, Activity, Target, Flame, Filter, 
+  Search, RefreshCw, DollarSign, ShoppingBag, Star, ArrowUp, ArrowDown 
+} from 'lucide-react';
+import { Company, Service, Ad, Promotion, Review, Statistics, Conversation } from '@/types';
+import { Sidebar } from '../common/layout/Sidebar';
+import { Card, CardHeader, CardBody, CardFooter, StatCard, Button, SkeletonStats, SkeletonList, addToast } from '@/ui';
 import { ProfileCompleteness } from './ProfileCompleteness';
 import { CompanyBookingsManager } from '../booking/CompanyBookingsManager';
 import { CompanyReviews } from '../reviews/CompanyReviews';
 import { CompanyProfileForm } from './CompanyProfileForm';
 import { ConversationList } from '../chat/ConversationList';
 import { ChatWindow } from '../chat/ChatWindow';
-import { CompanyServices } from '../CompanyServices';
-import { CompanyPromotions } from '../CompanyPromotions';
-import { CompanyAds } from '../CompanyAds';
-import { CompanyStatistics } from '../CompanyStatistics';
-import { CompanySettings } from '../CompanySettings';
+import { CompanyServices } from './management/CompanyServices';
+import { CompanyPromotions } from './management/CompanyPromotions';
+import { CompanyAds } from './management/CompanyAds';
+import { CompanyStatistics } from './dashboard/CompanyStatistics';
+import { CompanySettings } from './settings/CompanySettings';
 import { getCompanyStatistics } from '../../lib/AnalyticsEngine';
-import { SkeletonStats, SkeletonList } from '../ui/Skeleton';
-import { addToast } from '../ui/Toast';
 
 type CompanyTab = 
   | 'stats' 
@@ -39,6 +44,11 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
   const [activeTab, setActiveTab] = useState<CompanyTab>('stats');
   const [loading, setLoading] = useState(true);
 
+  // ✨ NOWY STATE - Filtry i search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState<'week' | 'month' | 'year'>('month');
+  const [showNotifications, setShowNotifications] = useState(false);
+
   // Core company data
   const [company, setCompany] = useState<Company | null>(null);
 
@@ -47,6 +57,7 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
   const [ads, setAds] = useState<Ad[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [stats, setStats] = useState<Statistics | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   // Selected chat conversation state
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -116,6 +127,13 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
         const snapAds = await getDocs(qAds);
         setAds(snapAds.docs.map(d => ({ id: d.id, ...d.data() } as Ad)));
       } catch (e) { console.warn('Ads could not be loaded from Firestore'); }
+
+      // ✨ Load reviews
+      try {
+        const qReviews = query(collection(db, 'reviews'), where('companyId', '==', user.uid));
+        const snapReviews = await getDocs(qReviews);
+        setReviews(snapReviews.docs.map(d => ({ id: d.id, ...d.data() } as Review)));
+      } catch (e) { console.warn('Reviews could not be loaded from Firestore'); }
 
       // Load stats
       try {
@@ -211,6 +229,17 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
     }
   };
 
+  const handleTogglePromotion = async (id: string, isActive: boolean) => {
+    try {
+      const db = getFirebaseDb();
+      await updateDoc(doc(db, 'promotions', id), { isActive });
+      addToast(`Promocja została ${isActive ? 'aktywna' : 'zawieszona'}.`, 'success');
+      await loadData();
+    } catch (e) {
+      addToast('Nie udało się zaktualizować promocji.', 'error');
+    }
+  };
+
   // Handlers for Ads
   const handleAddAd = async (title: string, description: string, price?: number) => {
     if (!user || !company) return;
@@ -263,6 +292,103 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
     }
   };
 
+  // ✨ NOWE FUNKCJE 1-5
+  // 1️⃣ Funkcja: Pobieranie raportu Excel
+  const handleExportReport = () => {
+    const csvContent = `RAPORT FIRMY - ${company?.companyName || 'N/A'}\nData: ${new Date().toISOString()}\n\nUsługi: ${services.length}\nPromocie: ${promotions.length}\nOpinie: ${reviews.length}\nOgłoszenia: ${ads.length}`;
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `raport_${company?.companyName}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    addToast('Raport pobrany pomyślnie', 'success');
+  };
+
+  const notificationCount = useMemo(() => {
+    return [
+      ads.filter(a => a.status === 'active').length > 0 ? 1 : 0,
+      reviews.length,
+      services.filter(s => !s.durationMin).length
+    ].reduce((a, b) => a + b, 0);
+  }, [ads, reviews, services]);
+
+  const quickStats = useMemo(() => {
+    const totalViews = stats?.views || 0;
+    const totalMessages = stats?.messages || 0;
+    const avgRating = reviews.length > 0 ? (reviews.reduce((acc, r) => acc + (r.rating || 0), 0) / reviews.length).toFixed(1) : '0';
+    const profileCompletion = Math.round((Object.values(company || {}).filter(v => v && v !== '').length / 15) * 100) || 0;
+
+    return {
+      servicesCount: services.length,
+      promosCount: promotions.length,
+      reviewsCount: reviews.length,
+      adsCount: ads.length,
+      profileCompletion,
+      totalViews,
+      totalMessages,
+      avgRating,
+      conversionRate: totalViews > 0 ? Math.round((totalMessages / totalViews) * 100) : 0
+    };
+  }, [services, promotions, reviews, ads, company, stats]);
+
+  const periodLabel = filterPeriod === 'week' ? 'Ostatni tydzień' : filterPeriod === 'month' ? 'Ostatni miesiąc' : 'Ostatni rok';
+
+  const notificationItems = [
+    { title: 'Nowe opinie', value: reviews.length, icon: Award },
+    { title: 'Aktywne promocje', value: promotions.filter(p => p.isActive !== false).length, icon: Tag },
+    { title: 'Aktywne usługi', value: services.filter(s => s.isActive !== false).length, icon: ClipboardList },
+    { title: 'Aktywne ogłoszenia', value: ads.filter(a => a.status === 'active').length, icon: Eye }
+  ];
+
+  const getFilteredServices = () => services.filter(s => s.isActive !== false);
+
+  const tabMeta: Record<CompanyTab, { title: string; description: string }> = {
+    stats: {
+      title: 'Statystyki & Profil',
+      description: 'Przeglądaj kluczowe metryki firmy, kompletność wizytówki oraz wszystkie sygnały sprzedażowe w jednym miejscu.'
+    },
+    bookings: {
+      title: 'Rezerwacje Wizyt',
+      description: 'Zarządzaj nadchodzącymi terminami, monitoruj statusy klientów i szybciej akceptuj nowe rezerwacje.'
+    },
+    chat: {
+      title: 'Wiadomości Realtime',
+      description: 'Otwórz panel czatu i odpowiadaj klientom błyskawicznie, aby budować zaufanie i przyspieszać zlecenia.'
+    },
+    profile: {
+      title: 'Edytuj Profil Firmy',
+      description: 'Uaktualnij dane firmy, opis usług oraz wizytówkę, aby przyciągać klientów i zwiększać widoczność.'
+    },
+    services: {
+      title: 'Oferta Usług',
+      description: 'Dodawaj, edytuj i zarządzaj ofertą usług w profesjonalnym katalogu dostępnym dla klientów.'
+    },
+    promos: {
+      title: 'Promocje i Kody',
+      description: 'Twórz oferty specjalne, kody rabatowe i ogłoszenia, które wyróżnią Twoją firmę w wyszukiwarce.'
+    },
+    reviews: {
+      title: 'Opinie Klientów',
+      description: 'Przeglądaj oceny, odpowiadaj na opinie i buduj swój wizerunek jako zaufany wykonawca.'
+    },
+    settings: {
+      title: 'Ustawienia Konta',
+      description: 'Skonfiguruj ustawienia konta, widoczność usługi oraz zabezpieczenia profilu firmy.'
+    }
+  };
+
+  const activeTabMeta = tabMeta[activeTab];
+
+  const statsOverview = [
+    { label: 'Usługi', value: services.length, hint: 'Aktywne pozycje', className: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/30' },
+    { label: 'Promocje', value: promotions.length, hint: 'Aktywne oferty', className: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30' },
+    { label: 'Opinie', value: reviews.length, hint: 'Łącznie', className: 'text-amber-600 bg-amber-50 dark:bg-amber-950/30' },
+    { label: 'Ogłoszenia', value: ads.length, hint: 'Publikowane', className: 'text-slate-700 bg-slate-100 dark:bg-slate-800/70' },
+    { label: 'Profil', value: quickStats.profileCompletion + '%', hint: 'Kompletność wizytówki', className: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-950/30' }
+  ];
+
   const sidebarTabs = [
     { id: 'stats', label: 'Statystyki & Profil', icon: BarChart3 },
     { id: 'bookings', label: 'Rezerwacje Wizyt', icon: Calendar },
@@ -276,14 +402,44 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:flex-row font-sans text-slate-900 dark:text-slate-100">
-        <div className="w-60 hidden lg:block bg-[#0f0f10] border-r border-white/5 p-6 space-y-4">
-          <div className="h-8 w-32 bg-slate-800 rounded-lg animate-pulse" />
-          <div className="h-20 w-full bg-slate-800/60 rounded-xl animate-pulse" />
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900 flex flex-col lg:flex-row font-sans transition-all duration-300">
+        <div className="w-60 hidden lg:block bg-gradient-to-b from-neutral-900 to-neutral-950 border-r border-white/5 p-6 space-y-4">
+          <div className="space-y-4">
+            <div className="h-8 w-32 bg-neutral-800 rounded-xl animate-pulse" />
+            <div className="h-4 w-40 bg-neutral-800/60 rounded-lg animate-pulse" />
+            <div className="space-y-2 pt-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-10 w-full bg-neutral-800/40 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="flex-1 p-6 space-y-6">
-          <SkeletonStats />
-          <SkeletonList count={4} />
+        <div className="flex-1 p-6 lg:p-8 space-y-6">
+          <div className="space-y-4">
+            <div className="h-12 w-80 bg-neutral-200 dark:bg-neutral-800 rounded-2xl animate-pulse" />
+            <div className="h-6 w-60 bg-neutral-200 dark:bg-neutral-800 rounded-lg animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="p-6">
+                <div className="space-y-3">
+                  <div className="h-4 w-20 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+                  <div className="h-8 w-16 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+                  <div className="h-3 w-24 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+                </div>
+              </Card>
+            ))}
+          </div>
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="h-6 w-32 bg-neutral-200 dark:bg-neutral-700 rounded animate-pulse" />
+              <div className="space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-16 w-full bg-neutral-200 dark:bg-neutral-700 rounded-xl animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </Card>
         </div>
       </div>
     );
@@ -302,11 +458,54 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
         badge={company?.visibilityPackage?.toUpperCase() || 'FREE'}
       />
 
-      <main className="flex-1 lg:ml-60 p-4 sm:p-8 max-w-7xl space-y-6">
-        {/* TAB 1: Stats & Overview */}
+      <main className="flex-1 lg:ml-60 p-4 sm:p-8 space-y-6">
+        <div className="bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+          <div className="flex flex-col xl:flex-row justify-between gap-5">
+            <div className="max-w-3xl">
+              <p className="text-xs uppercase tracking-[0.26em] font-black text-indigo-600 dark:text-indigo-400 mb-3">
+                {company?.visibilityPackage?.toUpperCase() || 'FREE'} • Panel Firmowy
+              </p>
+              <h1 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                {activeTabMeta?.title}
+              </h1>
+              <p className="mt-3 text-sm text-slate-600 dark:text-slate-400 max-w-2xl">
+                {activeTabMeta?.description}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <button
+                type="button"
+                onClick={() => onNavigate && onNavigate('company-profile', company?.uid)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 text-sm font-semibold shadow-lg shadow-indigo-600/20 transition-all"
+              >
+                <Eye className="w-4 h-4" /> Podgląd Wizytówki
+              </button>
+              {activeTab === 'stats' && (
+                <button
+                  type="button"
+                  onClick={handleExportReport}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-transparent text-slate-900 dark:text-slate-100 px-4 py-3 text-sm font-semibold hover:bg-slate-100 dark:hover:bg-slate-900 transition-all"
+                >
+                  <Download className="w-4 h-4" /> Raport
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-6">
+            {statsOverview.map((item) => (
+              <div key={item.label} className="rounded-3xl border border-slate-200 dark:border-slate-800 px-4 py-4 bg-slate-50 dark:bg-slate-900/80">
+                <p className={`text-xs font-semibold uppercase tracking-[0.2em] ${item.className}`}>{item.label}</p>
+                <p className="mt-3 text-2xl font-black text-slate-900 dark:text-white">{item.value}</p>
+                <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">{item.hint}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {activeTab === 'stats' && company && (
-          <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="animate-fade-in">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between mt-6">
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Panel Biznesowy Firmy</h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Przegląd kluczowych wskaźników i kompletności wizytówki</p>
@@ -320,13 +519,11 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
               </button>
             </div>
 
-            {/* Completeness indicator */}
             <ProfileCompleteness
               company={company}
               onNavigateToEdit={() => setActiveTab('profile')}
             />
 
-            {/* Statistics chart & metrics */}
             <CompanyStatistics company={company} stats={stats} />
           </div>
         )}
@@ -396,6 +593,7 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
               promotions={promotions}
               onAdd={handleAddPromotion}
               onDelete={handleDeletePromotion}
+              onToggleActive={handleTogglePromotion}
             />
             <CompanyAds
               ads={ads}

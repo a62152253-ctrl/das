@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Message, Conversation } from '../../types';
+import { Message, Conversation } from '@/types';
 import { 
   subscribeConversationMessages, 
   sendChatMessage, 
   markConversationAsRead 
 } from '../../lib/ChatEngine';
 import { useAuth } from '../../lib/AuthContext';
-import { Send, Image, X, CheckCheck, Loader2 } from 'lucide-react';
+import { Send, Image, X, CheckCheck, Loader2, MessageSquare, Smile, Paperclip } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Button } from '../ui/buttons/Button';
 
 interface ChatWindowProps {
   conversation: Conversation;
@@ -28,12 +30,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onClose })
   useEffect(() => {
     if (!conversation.id || !user) return;
 
-    // Subscribe to messages in realtime
     const unsubscribe = subscribeConversationMessages(conversation.id, (list) => {
       setMessages(list);
     });
 
-    // Mark as read
     markConversationAsRead(conversation.id, user.uid);
 
     return () => unsubscribe();
@@ -68,96 +68,127 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onClose })
   };
 
   return (
-    <div className="flex flex-col h-[550px] max-h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex flex-col h-[600px] max-h-[85vh] bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+    >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border-b border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white flex items-center justify-center font-bold text-sm">
             {otherParticipantName.charAt(0).toUpperCase()}
           </div>
           <div>
-            <h3 className="font-semibold text-slate-900 dark:text-white text-sm">{otherParticipantName}</h3>
-            <p className="text-[11px] text-emerald-500 font-medium">Aktywny teraz</p>
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">{otherParticipantName}</h3>
+            <p className="text-[11px] text-emerald-500 font-semibold flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Aktywny teraz
+            </p>
           </div>
         </div>
         {onClose && (
           <button 
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         )}
       </div>
 
-      {/* Messages list */}
-      <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/50 dark:bg-slate-900/50">
+      {/* Messages */}
+      <div className="flex-1 p-5 overflow-y-auto space-y-4 bg-slate-50/50 dark:bg-slate-900/50">
         {messages.length === 0 ? (
-          <div className="h-full flex items-center justify-center text-xs text-slate-400 text-center">
-            Brak wcześniejszych wiadomości.<br />Napisz pierwszą wiadomość!
+          <div className="h-full flex flex-col items-center justify-center text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-3 bg-slate-100 dark:bg-slate-800">
+              <MessageSquare className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-400 font-semibold mb-1">
+              Początek rozmowy
+            </p>
+            <p className="text-[12px] text-slate-500 dark:text-slate-500">
+              Napisz pierwszą wiadomość!
+            </p>
           </div>
         ) : (
-          messages.map(msg => {
-            const isMe = msg.senderId === user?.uid;
-            return (
-              <div 
-                key={msg.id}
-                className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-              >
-                <div 
-                  className={`max-w-[75%] rounded-2xl px-4 py-2.5 text-xs shadow-sm ${
-                    isMe 
-                      ? 'bg-indigo-600 text-white rounded-br-none' 
-                      : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-bl-none'
-                  }`}
+          <>
+            {messages.map((msg, idx) => {
+              const isMe = msg.senderId === user?.uid;
+              return (
+                <motion.div 
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.02 }}
+                  className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
                 >
-                  {msg.imageUrl && (
-                    <img 
-                      src={msg.imageUrl} 
-                      alt="Załącznik" 
-                      className="rounded-lg mb-2 max-h-48 object-cover w-full cursor-pointer"
-                      onClick={() => window.open(msg.imageUrl, '_blank')}
-                    />
-                  )}
-                  {msg.content && <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>}
-                </div>
-                <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 px-1">
-                  <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  {isMe && <CheckCheck className="w-3 h-3 text-indigo-400" />}
-                </div>
-              </div>
-            );
-          })
+                  <div 
+                    className={`max-w-[70%] rounded-2xl px-4 py-3 text-sm shadow-md transition-all ${
+                      isMe 
+                        ? 'bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-br-none' 
+                        : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-bl-none'
+                    }`}
+                  >
+                    {msg.imageUrl && (
+                      <img 
+                        src={msg.imageUrl} 
+                        alt="Załącznik" 
+                        className="rounded-lg mb-2 max-h-48 object-cover w-full cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => window.open(msg.imageUrl, '_blank')}
+                      />
+                    )}
+                    {msg.content && (
+                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                    )}
+                  </div>
+                  <div className={`flex items-center gap-2 mt-1 text-[10px] ${isMe ? 'text-slate-400' : 'text-slate-500 dark:text-slate-400'} px-1`}>
+                    <span>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    {isMe && (
+                      <CheckCheck className={`w-3.5 h-3.5 ${msg.read ? 'text-indigo-400' : 'text-slate-400'}`} />
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </>
         )}
-        <div ref={messagesEndRef} />
       </div>
 
-      {/* Image URL Modal */}
+      {/* Image URL Input */}
       {showImageModal && (
-        <div className="p-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
+        <motion.div
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="px-5 py-3 bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2"
+        >
           <input
             type="url"
-            placeholder="Wklej adres URL zdjęcia (https://...)"
+            placeholder="Wklej URL zdjęcia..."
             value={imageInput}
             onChange={(e) => setImageInput(e.target.value)}
-            className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+            className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          <button 
+          <Button 
+            size="sm"
+            variant="ghost"
             onClick={() => setShowImageModal(false)}
-            className="px-2 py-1.5 text-xs bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg"
           >
-            Gotowe
-          </button>
-        </div>
+            ✓
+          </Button>
+        </motion.div>
       )}
 
-      {/* Message Input */}
-      <form onSubmit={handleSend} className="p-3 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
+      {/* Input */}
+      <form onSubmit={handleSend} className="px-5 py-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2">
         <button
           type="button"
           onClick={() => setShowImageModal(!showImageModal)}
-          className={`p-2 rounded-xl transition-colors ${
-            imageInput ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/50 dark:text-indigo-400' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
+          className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+            imageInput 
+              ? 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400' 
+              : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700'
           }`}
           title="Dodaj URL zdjęcia"
         >
@@ -168,18 +199,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onClose })
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Wpisz wiadomość..."
-          className="flex-1 px-4 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend(e as any)}
+          placeholder="Napisz wiadomość..."
+          className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 
-        <button
+        <Button
           type="submit"
           disabled={sending || (!text.trim() && !imageInput.trim())}
-          className="p-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-md shadow-indigo-500/20"
+          size="icon"
+          className="hover:shadow-lg shadow-indigo-500/20"
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-        </button>
+        </Button>
       </form>
-    </div>
+    </motion.div>
   );
 };

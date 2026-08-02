@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { getFirebaseDb } from '../lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { 
   Building2, MapPin, Briefcase, Link as LinkIcon, Phone, Mail, 
   FileText, LogOut, Loader2, Sparkles, User as UserIcon, 
   TrendingUp, Users, Star, ArrowRight, Settings, Plus, Bell 
 } from 'lucide-react';
-import { AuthView } from '../types';
+import { AuthView } from '@/types';
 import { motion } from 'motion/react';
 
 interface CompanyData {

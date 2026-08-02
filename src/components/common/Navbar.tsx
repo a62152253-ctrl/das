@@ -1,9 +1,9 @@
 import React from 'react';
 import { useAuth } from '../../lib/AuthContext';
 import { Sparkles, LogOut, User, Building2, ShieldAlert, Compass, Eye } from 'lucide-react';
-import { AuthView } from '../../types';
+import { AuthView } from '@/types';
 import { NotificationsPopover } from './NotificationsPopover';
-import { DarkModeToggle } from './DarkModeToggle';
+import { DarkModeToggle } from '@/components/DarkModeToggle';
 
 interface Props {
   currentView: AuthView;

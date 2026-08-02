@@ -1,5 +1,5 @@
 import React from 'react';
-import { Company } from '../../types';
+import { Company } from '@/types';
 import { calculateProfileCompleteness } from '../../lib/RankingEngine';
 import { CheckCircle2, XCircle, Award } from 'lucide-react';
 

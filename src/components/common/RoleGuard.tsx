@@ -1,5 +1,5 @@
 import React from 'react';
-import { AuthView } from '../../types';
+import { AuthView } from '@/types';
 import { useAuth } from '../../lib/AuthContext';
 
 interface RoleGuardProps {

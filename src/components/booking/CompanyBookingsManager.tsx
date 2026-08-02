@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Booking } from '../../types';
+import { Booking } from '@/types';
 import { subscribeUserBookings, updateBookingStatus } from '../../lib/BookingEngine';
 import { Calendar as CalendarIcon, Clock, Phone, User, Check, X, CheckCircle2, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
-import { addToast } from '../ui/Toast';
+import { addToast } from '../ui/feedback/Toast';
 
 interface CompanyBookingsManagerProps {
   companyId: string;
@@ -93,8 +93,12 @@ export function CompanyBookingsManager({ companyId, companyName }: CompanyBookin
       {loading ? (
         <div className="py-8 text-center text-xs text-slate-400 animate-pulse">Ładowanie listy rezerwacji...</div>
       ) : filteredBookings.length === 0 ? (
-        <div className="py-12 text-center text-slate-400 text-xs bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-700">
-          Brak rezerwacji w wybranej kategorii.
+        <div className="py-12 text-center bg-slate-50 dark:bg-slate-900/40 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full mb-4 bg-white dark:bg-slate-800">
+            <CalendarIcon className="w-6 h-6 text-slate-400" />
+          </div>
+          <h4 className="font-bold text-slate-900 dark:text-white text-sm mb-1">Brak rezerwacji</h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Nowe wizyty będą pojawiać się tutaj w czasie rzeczywistym</p>
         </div>
       ) : (
         <div className="space-y-3">

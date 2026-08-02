@@ -1,0 +1,228 @@
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Loader2, TrendingUp, Star, MapPin, Heart, Share2 } from 'lucide-react';
+import { Company } from '../../../types';
+import { Button, addToast } from '../../ui';
+
+interface ViewMoreProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  items: Company[];
+  onSelectCompany: (id: string) => void;
+  loading?: boolean;
+  type?: 'companies' | 'categories' | 'promotions';
+}
+
+export function ViewMore({
+  isOpen,
+  onClose,
+  title,
+  items,
+  onSelectCompany,
+  loading = false,
+  type = 'companies'
+}: ViewMoreProps) {
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('lokalnie_favorite_ids');
+      if (saved) setFavorites(JSON.parse(saved));
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const toggleFavorite = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    let updated: string[];
+    if (favorites.includes(id)) {
+      updated = favorites.filter(f => f !== id);
+      addToast('Usunięto z ulubionych', 'info');
+    } else {
+      updated = [...favorites, id];
+      addToast('Dodano do ulubionych!', 'success');
+    }
+    setFavorites(updated);
+    localStorage.setItem('lokalnie_favorite_ids', JSON.stringify(updated));
+  };
+
+  const handleShare = (company: Company, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(`${company.companyName} - ${window.location.href}`);
+    addToast(`Skopiowano "${company.companyName}"`, 'success');
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40"
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed inset-4 md:inset-8 lg:inset-12 z-50 bg-white dark:bg-slate-900 rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 md:p-8 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">
+                  {title}
+                </h2>
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                  {loading ? 'Ładowanie...' : `${items.length} elementów`}
+                </p>
+              </div>
+              <button
+                onClick={onClose}
+                className="flex-shrink-0 w-10 h-10 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 flex items-center justify-center transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8">
+              {loading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-indigo-600 dark:text-indigo-400 animate-spin mx-auto mb-4" />
+                    <p className="text-slate-600 dark:text-slate-400 font-semibold">Ładuję więcej elementów...</p>
+                  </div>
+                </div>
+              ) : items.length === 0 ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center max-w-md">
+                    <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <TrendingUp className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+                      Brak dostępnych elementów
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 mb-4">
+                      Spróbuj zmienić wyszukiwanie lub wróć później, aby zobaczyć nowe oferty.
+                    </p>
+                    <Button variant="gradient" onClick={onClose}>
+                      Wróć do strony głównej
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {items.map((item, idx) => (
+                    <motion.div
+                      key={item.uid || idx}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      onClick={() => onSelectCompany(item.uid)}
+                      className="group bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-600 shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden flex flex-col"
+                    >
+                      {/* Image */}
+                      <div className="relative h-40 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 flex items-center justify-center group-hover:from-indigo-100 group-hover:to-purple-100 transition-colors overflow-hidden">
+                        {item.mainPhoto ? (
+                          <img
+                            src={item.mainPhoto}
+                            alt={item.companyName}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="text-4xl text-indigo-400/30">📍</div>
+                        )}
+
+                        {/* Badges */}
+                        <div className="absolute top-3 left-3 flex items-center gap-2">
+                          <span className="px-3 py-1 bg-indigo-500/90 backdrop-blur-sm text-white text-xs font-bold rounded-full">
+                            {item.category || 'Usługi'}
+                          </span>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="absolute top-3 right-3 flex items-center gap-2">
+                          <button
+                            onClick={(e) => toggleFavorite(item.uid, e)}
+                            className={`p-2.5 rounded-full transition-all backdrop-blur-sm ${
+                              favorites.includes(item.uid)
+                                ? 'bg-rose-500 text-white'
+                                : 'bg-white/90 dark:bg-slate-800/90 text-slate-600 hover:text-rose-500'
+                            }`}
+                          >
+                            <Heart
+                              className={`w-4 h-4 ${
+                                favorites.includes(item.uid) ? 'fill-white' : ''
+                              }`}
+                            />
+                          </button>
+                          <button
+                            onClick={(e) => handleShare(item, e)}
+                            className="p-2.5 bg-white/90 dark:bg-slate-800/90 text-slate-600 hover:text-indigo-600 rounded-full transition-all backdrop-blur-sm cursor-pointer"
+                          >
+                            <Share2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Rating Badge */}
+                        <div className="absolute bottom-3 left-3 flex items-center gap-1 px-2 py-1 rounded-lg bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm">
+                          <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">
+                            {(item.rating || 5.0).toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-4 flex-1 flex flex-col">
+                        <h3 className="font-bold text-base text-slate-900 dark:text-white mb-2 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          {item.companyName}
+                        </h3>
+
+                        <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 mb-3">
+                          <MapPin className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                          <span className="line-clamp-1">{item.city}</span>
+                        </p>
+
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 mb-4 flex-1">
+                          {item.description || item.services || 'Brak opisu'}
+                        </p>
+
+                        {/* Footer */}
+                        <Button
+                          size="sm"
+                          onClick={() => onSelectCompany(item.uid)}
+                          fullWidth
+                        >
+                          Zobacz profil
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer Info */}
+            {!loading && items.length > 0 && (
+              <div className="border-t border-slate-200 dark:border-slate-800 p-6 bg-slate-50 dark:bg-slate-800/50 text-center text-sm text-slate-600 dark:text-slate-400">
+                Wyświetlanie {items.length} {items.length === 1 ? 'elementu' : items.length < 5 ? 'elementów' : 'elementów'}
+              </div>
+            )}
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+export type { ViewMoreProps };

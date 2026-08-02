@@ -1,4 +1,4 @@
-import { Company, Booking, Service } from '../types';
+import { Company, Booking, Service } from '@/types';
 import { getFirebaseDb } from './firebase';
 import { collection, addDoc, updateDoc, doc, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { createNotification } from './NotificationEngine';

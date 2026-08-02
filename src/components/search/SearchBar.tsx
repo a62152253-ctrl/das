@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, MapPin, Sparkles, X, Building2, Tag, Megaphone, ArrowUpRight } from 'lucide-react';
-import { getSuggestions, SearchSuggestionItem } from '../../lib/SearchEngine';
+import { getSuggestions, SearchSuggestionItem } from '../lib/SearchEngine';
 
 interface Props {
   initialQuery?: string;
@@ -81,20 +81,29 @@ export function SearchBar({ initialQuery = '', onSearch }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery) {
+      setFocused(true);
+      return;
+    }
     setIsAnalyzing(true);
-    localStorage.setItem('last_search_city', city);
+    const targetCity = city.trim() || 'Poznań';
+    localStorage.setItem('last_search_city', targetCity);
     setTimeout(() => {
       setIsAnalyzing(false);
-      onSearch(query, city);
+      onSearch(trimmedQuery, targetCity);
       setFocused(false);
+      setActiveSuggestionIndex(-1);
     }, 250);
   };
 
   const handleSuggestionClick = (val: string) => {
+    const targetCity = city.trim() || 'Poznań';
     setQuery(val);
-    localStorage.setItem('last_search_city', city);
-    onSearch(val, city);
+    localStorage.setItem('last_search_city', targetCity);
+    onSearch(val, targetCity);
     setFocused(false);
+    setActiveSuggestionIndex(-1);
   };
 
   const handleClear = () => {
@@ -184,10 +193,11 @@ export function SearchBar({ initialQuery = '', onSearch }: Props) {
                 Sugerowane trafienia (Smart Auto-Complete)
               </div>
               {dynamicSuggestions.map((sug, idx) => (
-                <div
+                <button
                   key={idx}
+                  type="button"
                   onClick={() => handleSuggestionClick(sug.text)}
-                  className={`px-3 py-2.5 rounded-xl flex items-center justify-between cursor-pointer text-xs transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center justify-between cursor-pointer text-xs transition-all ${
                     activeSuggestionIndex === idx
                       ? 'bg-indigo-600/30 text-white border border-indigo-500/30'
                       : 'text-slate-200 hover:bg-white/5'
@@ -200,7 +210,7 @@ export function SearchBar({ initialQuery = '', onSearch }: Props) {
                   <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
                     {sug.category}
                   </span>
-                </div>
+                </button>
               ))}
             </div>
           ) : (
