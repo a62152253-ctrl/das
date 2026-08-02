@@ -5,7 +5,7 @@ import {
   Heart, History, MessageSquare, Bell, Calendar, Star, 
   Sparkles, Trash2, ArrowRight, Clock, MapPin, CheckCircle, XCircle,
   TrendingUp, Users, CalendarDays, Activity, Filter, Building2, LogOut,
-  Settings, ChevronDown, Flame, BarChart3, AlertCircle
+  Settings, ChevronDown, Flame, BarChart3, AlertCircle, Eye
 } from 'lucide-react';
 import { Company, Booking, FavoriteCompany, UserHistoryItem, Conversation } from '@/types';
 import { Sidebar } from '@/components/common/layout/Sidebar';
@@ -105,33 +105,41 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
     return <Badge variant={config.variant} size="sm">{config.text}</Badge>;
   };
 
-  const tabs = [
-    { id: 'recommendations', label: '✨ Polecane dla Ciebie', badge: undefined },
-    { id: 'favorites', label: '❤️ Ulubione', badge: favorites.length },
-    { id: 'bookings', label: '📅 Rezerwacje', badge: bookings.filter(b => b.status === 'accepted' || b.status === 'pending').length },
-    { id: 'messages', label: '💬 Wiadomości', badge: undefined },
-    { id: 'history', label: '⏱️ Historia', badge: historyItems.length }
+  const sidebarTabs = [
+    { id: 'recommendations', label: '✨ Polecane', icon: Sparkles },
+    { id: 'favorites', label: '❤️ Ulubione', icon: Heart },
+    { id: 'bookings', label: '📅 Rezerwacje', icon: Calendar },
+    { id: 'messages', label: '💬 Wiadomości', icon: MessageSquare },
+    { id: 'history', label: '⏱️ Historia', icon: History }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 font-sans transition-all duration-300">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white px-6 py-8 shadow-xl">
-        <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:flex-row font-sans transition-all duration-300">
+      <Sidebar
+        title={profile?.name || 'Klient'}
+        subtitle={user?.email || 'Email'}
+        tabs={sidebarTabs}
+        activeTab={activeTab}
+        onTabChange={(id) => setActiveTab(id as any)}
+        onLogout={logout}
+        badge={`${favorites.length} ulubionych`}
+      />
+
+      <main className="flex-1 lg:ml-60 p-4 sm:p-8 space-y-6">
+        {/* Header */}
+        <div className="bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 border border-white/30 backdrop-blur-sm flex items-center justify-center">
-                <span className="text-3xl font-black">{profile?.name?.[0] || '👤'}</span>
-              </div>
-              <div>
-                <h1 className="text-3xl font-black tracking-tight">Witaj, {profile?.name || 'Kliencie'}!</h1>
-                <p className="text-white/80 text-sm mt-1">Zarządzaj rezerwacjami, ulubionymi i konwersacjami</p>
-              </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.26em] font-black text-indigo-600 dark:text-indigo-400 mb-2">
+                Mój Panel
+              </p>
+              <h1 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
+                Witaj, {profile?.name || 'Kliencie'}!
+              </h1>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+                Zarządzaj rezerwacjami, ulubionymi i wiadomościami
+              </p>
             </div>
-            <Button variant="ghost" onClick={logout} className="text-white hover:bg-white/20">
-              <LogOut className="w-4 h-4 mr-2" />
-              Wyloguj się
-            </Button>
           </div>
 
           {/* Quick Stats */}
@@ -140,35 +148,17 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
               { icon: Heart, label: 'Ulubione', value: favorites.length },
               { icon: Calendar, label: 'Nadchodzące', value: bookings.filter(b => b.status === 'accepted').length },
               { icon: Star, label: 'Średnia ocena', value: `${(allCompanies.reduce((s, c) => s + (c.rating || 5), 0) / Math.max(allCompanies.length, 1)).toFixed(1)}★` },
-              { icon: MessageSquare, label: 'Konwersacje', value: '0' }
+              { icon: MessageSquare, label: 'Wiadomości', value: bookings.length }
             ].map((stat, i) => (
-              <div key={i} className="rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 px-4 py-3">
+              <div key={i} className="rounded-2xl border border-slate-200 dark:border-slate-800 px-4 py-4 bg-slate-50 dark:bg-slate-900/80">
                 <div className="flex items-center gap-2">
-                  <stat.icon className="w-4 h-4 text-white/70" />
-                  <span className="text-xs text-white/70">{stat.label}</span>
+                  <stat.icon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">{stat.label}</span>
                 </div>
-                <p className="text-2xl font-black text-white mt-1">{stat.value}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white mt-3">{stat.value}</p>
               </div>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Tabs Navigation */}
-        <div className="mb-8">
-          <Tabs
-            tabs={tabs.map(t => ({
-              id: t.id,
-              label: t.label,
-              badge: t.badge,
-              content: <div /> // placeholder
-            }))}
-            defaultTab={activeTab}
-            onChange={(id) => setActiveTab(id as any)}
-            variant="pills"
-          />
         </div>
 
         {/* Content Sections */}
@@ -184,13 +174,14 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
               className="space-y-6"
             >
               {recommendations.length === 0 ? (
-                <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-12 text-center border border-indigo-100 dark:border-indigo-900/30">
+                <div className="rounded-2xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-12 text-center">
                   <Sparkles className="w-12 h-12 text-indigo-600 dark:text-indigo-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Brak rekomendacji</h3>
                   <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6">
                     Zacznij przeglądać firmy, aby otrzymać personalizowane rekomendacje
                   </p>
                   <Button variant="gradient" onClick={() => onNavigate?.('home')}>
+                    <Eye className="w-4 h-4 mr-2" />
                     Odkryj firmy
                   </Button>
                 </div>
@@ -254,7 +245,7 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
               exit={{ opacity: 0, y: -20 }}
             >
               {favorites.length === 0 ? (
-                <div className="rounded-2xl bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 p-12 text-center border border-rose-100 dark:border-rose-900/30">
+                <div className="rounded-2xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-12 text-center">
                   <Heart className="w-12 h-12 text-rose-500 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Brak ulubionych</h3>
                   <p className="text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6">
@@ -352,7 +343,7 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
               </div>
 
               {filteredBookings.length === 0 ? (
-                <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 p-12 text-center border border-indigo-100 dark:border-indigo-900/30">
+                <div className="rounded-2xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-12 text-center">
                   <Calendar className="w-12 h-12 text-indigo-600 dark:text-indigo-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
                     {bookings.length === 0 ? 'Brak rezerwacji' : 'Brak rezerwacji o wybranym statusie'}
@@ -453,7 +444,7 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
                   {selectedConversation ? (
                     <ChatWindow conversation={selectedConversation} />
                   ) : (
-                    <div className="rounded-2xl bg-slate-50 dark:bg-slate-800 p-12 text-center border border-slate-200 dark:border-slate-700">
+                    <div className="rounded-2xl bg-white dark:bg-slate-800 p-12 text-center border border-slate-200 dark:border-slate-700">
                       <MessageSquare className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                       <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                         Wybierz konwersację
@@ -477,7 +468,7 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
               exit={{ opacity: 0, y: -20 }}
             >
               {historyItems.length === 0 ? (
-                <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-950 p-12 text-center border border-slate-200 dark:border-slate-700">
+                <div className="rounded-2xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 p-12 text-center">
                   <History className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Brak historii</h3>
                   <p className="text-slate-600 dark:text-slate-400">
@@ -523,7 +514,7 @@ export function ClientDashboard({ onNavigate }: ClientDashboardProps) {
           )}
 
         </AnimatePresence>
-      </div>
+      </main>
     </div>
   );
 }

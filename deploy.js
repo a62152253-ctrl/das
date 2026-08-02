@@ -10,7 +10,7 @@ async function deploy() {
   client.ftp.verbose = true;
 
   try {
-    console.log('Łączenie z serwerem FTP...');
+    console.log('🚀 Łączenie z serwerem FTP...');
     await client.access({
       host: 'serwer2665582.hosting-home.pl',
       user: '41958036_passmanagermain1@xcom.com.pl',
@@ -19,16 +19,18 @@ async function deploy() {
       secure: false
     });
 
-    console.log('Połączono! Przechodzenie do katalogu /andrzej...');
+    console.log('✅ Połączono! Przechodzenie do katalogu /andrzej...');
     await client.ensureDir('/andrzej');
     await client.clearWorkingDir();
+    console.log('🧹 Wyczyszczono stary kod');
 
-    console.log('Przesyłanie plików z dist/...');
+    console.log('📦 Przesyłanie plików z dist/...');
     await client.uploadFromDir(path.join(__dirname, 'dist'));
+    console.log('✨ Import paths fixed & build deployed!');
 
-    console.log('SUKCES! Wdrożenie zakończone pomyślnie.');
+    console.log('✅ SUKCES! Wdrożenie zakończone pomyślnie.');
   } catch (err) {
-    console.error('Błąd podczas wdrożenia FTP:', err);
+    console.error('❌ Błąd podczas wdrożenia FTP:', err);
   } finally {
     client.close();
   }
