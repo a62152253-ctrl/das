@@ -5,7 +5,7 @@ import { ForgotPasswordForm } from './components/auth/ForgotPasswordForm';
 import { CompanyProfileForm } from './components/company/profile/CompanyProfileForm';
 import { CompanyDashboard } from './components/company/dashboard/CompanyDashboard';
 import { ClientDashboard } from './components/client/ClientDashboard';
-import { AdminDashboard } from './components/admin/dashboard/AdminDashboard';
+const AdminDashboard = React.lazy(() => import('./components/admin/dashboard/AdminDashboard'));
 import { Navbar } from './components/common/Navbar';
 import { HomePage } from './components/HomePage';
 import { CompanyPublicProfile } from './components/company/profile/CompanyPublicProfile';
@@ -324,7 +324,9 @@ export default function App() {
         )}
 
         {view === 'dashboard-admin' && (
-          <AdminDashboard onNavigate={handleNavigate} />
+          <React.Suspense fallback={<div>Loading admin panel…</div>}>
+            <AdminDashboard onNavigate={handleNavigate} />
+          </React.Suspense>
         )}
       </div>
     </div>

@@ -18,39 +18,19 @@ const pgPool = new pg.Pool({
 });
 
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-const listingModerationQueue = new Queue('listing-moderation', redis);
+redis.on('error', err => {
+  console.error('Redis error:', err);
+});
+const listingModerationQueue = new Queue('listing-moderation', {
+  redis: {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: Number(process.env.REDIS_PORT || 6379)
+  }
+});
 
 app.use(express.json({ limit: '50kb' }));
 
-// ============================================
-// SERVER-SIDE FAST LOGIN ENDPOINTS
-// ============================================
-
-app.post('/api/fast-login', (req, res) => {
-  const { role } = req.body;
-  if (role === 'admin') {
-    return res.json({
-      success: true,
-      role: 'admin',
-      token: 'super-admin-token-secret-123',
-      user: { id: 'admin-1', email: 'admin12323EW@SA', name: 'Administrator Główny', role: 'admin' }
-    });
-  } else if (role === 'firma') {
-    return res.json({
-      success: true,
-      role: 'firma',
-      token: 'firma-partner-token-456',
-      user: { id: 'comp_1', email: 'kontakt@salonanna.pl', name: 'Salon Anna (Partner)', role: 'firma' }
-    });
-  } else {
-    return res.json({
-      success: true,
-      role: 'client',
-      token: 'dev-client-token-789',
-      user: { id: 'dev-1', email: 'dev@lokalnie.pro', name: 'Deweloper Testowy', role: 'client' }
-    });
-  }
-});
+// NOTE: Fast login endpoint removed (critical security vulnerability).
 
 // ============================================
 // SUSPICIOUS LISTING DETECTION
@@ -416,8 +396,8 @@ app.post('/admin/api/listing/:listingId/approve', async (req, res) => {
 
     await pgPool.query(
       `UPDATE listing_moderation_queue SET status = 'APPROVED', action_taken = $1, resolved_at = NOW()
-       WHERE listing_id = $1`,
-      [listingId, reason]
+       WHERE listing_id = $2`,
+      [reason, listingId]
     );
 
     // Mark listing as published/verified
@@ -443,8 +423,8 @@ app.post('/admin/api/listing/:listingId/reject', async (req, res) => {
 
     await pgPool.query(
       `UPDATE listing_moderation_queue SET status = 'REJECTED', action_taken = $1, resolved_at = NOW()
-       WHERE listing_id = $1`,
-      [listingId, reason]
+       WHERE listing_id = $2`,
+      [reason, listingId]
     );
 
     // Mark listing as rejected
@@ -608,6 +588,7 @@ async function initializeDatabase() {
     console.log('[DB] Listing moderation tables ready');
   } catch (err) {
     console.error('[DB] Error:', err);
+    process.exit(1);
   }
 }
 
@@ -616,6 +597,14 @@ async function initializeDatabase() {
 // ============================================
 
 import { getMysqlPool, initMysqlSchema } from './src/lib/mysqlDb.js';
+
+// Define allowed columns per collection for INSERT operations
+const allowedColumns = {
+  users: ['id', 'email', 'name', 'role', 'created_at'],
+  companies: ['id', 'name', 'nip', 'regon', 'category', 'created_at'],
+  ads: ['id', 'company_id', 'title', 'description', 'category', 'created_at'],
+  // add other tables as needed
+};
 
 initMysqlSchema();
 
@@ -645,7 +634,12 @@ app.post('/api/mysql/:collection/:action', async (req, res) => {
 
     if (action === 'insert') {
       const keys = Object.keys(req.body);
-      const values = Object.values(req.body);
+      // Validate keys against whitelist
+      const invalid = keys.filter(k => !allowedColumns[collection]?.includes(k));
+      if (invalid.length) {
+        return res.status(400).json({ error: `Invalid columns: ${invalid.join(', ')}` });
+      }
+      const values = keys.map(k => req.body[k]);
       const placeholders = keys.map(() => '?').join(', ');
       const sql = `INSERT INTO ${collection} (${keys.join(', ')}) VALUES (${placeholders})`;
       await pool.query(sql, values);
@@ -660,6 +654,11 @@ app.post('/api/mysql/:collection/:action', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 // Static

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import styles from './CompanyProfileForm.module.css';
 import { Building2, MapPin, Briefcase, Link as LinkIcon, Phone, Mail, FileText, CheckCircle2, ArrowRight, ArrowLeft, Loader2, ImagePlus, Plus, Trash2, HelpCircle, Instagram, Facebook, Globe } from 'lucide-react';
 import { AuthView, Company, FAQItem } from '@/types';
 import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
@@ -630,3 +631,5 @@ export function CompanyProfileForm({ onNavigate, existingCompany }: Props) {
     </div>
   );
 }
+
+export default React.memo(CompanyProfileForm);

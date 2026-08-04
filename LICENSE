@@ -1,21 +1,257 @@
-MIT License
+PROPRIETARY SOFTWARE LICENSE AGREEMENT
 
-Copyright (c) 2024 Andrzej
+Copyright (c) 2026 Andrzej
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+All Rights Reserved.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+==================================================
+1. INTRODUCTION
+==================================================
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This License Agreement ("Agreement") governs the use of the software,
+source code, binaries, documentation, assets, files, and all associated
+materials (collectively referred to as the "Software").
+
+The Software is the exclusive intellectual property of Andrzej
+("Copyright Holder").
+
+By accessing, viewing, downloading, copying, or otherwise interacting with
+the Software, you acknowledge that the Software is protected by copyright
+laws and that no rights are granted to you except those explicitly stated
+in this Agreement.
+
+
+==================================================
+2. OWNERSHIP
+==================================================
+
+The Software and all intellectual property rights related to it remain the
+exclusive property of the Copyright Holder.
+
+All rights, title, interest, copyrights, trademarks, trade secrets, and
+other intellectual property rights associated with the Software are reserved
+by the Copyright Holder.
+
+No transfer of ownership is created by providing access to the Software.
+
+The recipient does not obtain ownership rights, intellectual property rights,
+or any other rights except where explicitly granted in writing.
+
+
+==================================================
+3. NO LICENSE GRANTED
+==================================================
+
+Unless the Copyright Holder provides explicit written authorization,
+no license, permission, or authorization is granted.
+
+The absence of a written license means that all rights remain reserved.
+
+The Software may not be used, copied, modified, distributed, or exploited
+without prior permission.
+
+
+==================================================
+4. RESTRICTED USE
+==================================================
+
+The following activities are strictly prohibited without written permission:
+
+- using the Software for personal purposes;
+- using the Software for commercial purposes;
+- copying any part of the Software;
+- distributing the Software;
+- publishing the Software;
+- modifying the Software;
+- creating derivative works;
+- incorporating the Software into another project;
+- selling or licensing the Software;
+- renting or transferring access to the Software.
+
+
+==================================================
+5. SOURCE CODE PROTECTION
+==================================================
+
+The source code is confidential intellectual property.
+
+Unauthorized access, inspection, extraction, copying, or redistribution of
+the source code is prohibited.
+
+The recipient must not attempt to:
+
+- reverse engineer the Software;
+- decompile the Software;
+- disassemble binaries;
+- reconstruct source code;
+- discover internal algorithms;
+- extract proprietary logic.
+
+
+==================================================
+6. MODIFICATION RESTRICTIONS
+==================================================
+
+No person or organization may modify, adapt, translate, rewrite, or create
+new versions based on the Software without written authorization.
+
+Any unauthorized modification is considered a violation of this Agreement.
+
+
+==================================================
+7. DISTRIBUTION RESTRICTIONS
+==================================================
+
+The Software may not be:
+
+- uploaded to public repositories;
+- shared through file hosting services;
+- redistributed to third parties;
+- included in packages or products;
+- sold or licensed.
+
+Any redistribution requires explicit written permission.
+
+
+==================================================
+8. COMMERCIAL RESTRICTIONS
+==================================================
+
+The Software may not be used in any commercial product, service,
+application, platform, website, or business operation without a separate
+commercial license agreement.
+
+Commercial use requires authorization from the Copyright Holder.
+
+
+==================================================
+9. CONFIDENTIALITY
+==================================================
+
+The Software and related materials may contain confidential information.
+
+The recipient agrees not to disclose, publish, or reveal confidential
+parts of the Software to third parties.
+
+Confidential information includes, but is not limited to:
+
+- source code;
+- architecture;
+- algorithms;
+- design decisions;
+- internal documentation;
+- technical methods.
+
+
+==================================================
+10. ACCESS RIGHTS
+==================================================
+
+Access to the Software does not create ownership.
+
+Viewing the Software does not grant permission to use it.
+
+Downloading the Software does not grant permission to modify or distribute it.
+
+Any access provided by the Copyright Holder may be revoked at any time.
+
+
+==================================================
+11. TERMINATION
+==================================================
+
+Any unauthorized use immediately terminates any implied permission to access
+or view the Software.
+
+Upon termination, all copies of the Software must be removed and destroyed.
+
+Continued possession or use after termination is prohibited.
+
+
+==================================================
+12. ENFORCEMENT
+==================================================
+
+The Copyright Holder reserves the right to enforce this Agreement against
+unauthorized use, copying, distribution, or modification.
+
+Violations may result in legal action or other available remedies.
+
+
+==================================================
+13. NO WARRANTY
+==================================================
+
+THE SOFTWARE IS PROVIDED "AS IS".
+
+THE COPYRIGHT HOLDER MAKES NO WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT
+NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, SECURITY, RELIABILITY, OR NON-INFRINGEMENT.
+
+
+==================================================
+14. LIMITATION OF LIABILITY
+==================================================
+
+The Copyright Holder shall not be responsible for any damages, losses,
+claims, or liabilities resulting from the use or inability to use the
+Software.
+
+
+==================================================
+15. THIRD PARTY COMPONENTS
+==================================================
+
+Any third-party software included within the Software remains subject to its
+own licenses and terms.
+
+This Agreement applies only to components owned by the Copyright Holder.
+
+
+==================================================
+16. CHANGES TO THIS AGREEMENT
+==================================================
+
+The Copyright Holder reserves the right to update or modify this Agreement
+at any time.
+
+The latest version applies unless otherwise stated.
+
+
+==================================================
+17. PERMISSION REQUESTS
+==================================================
+
+Requests for permission to use, modify, distribute, or commercially exploit
+the Software must be submitted directly to the Copyright Holder.
+
+No permission is valid unless explicitly granted in writing.
+
+
+==================================================
+18. SEVERABILITY
+==================================================
+
+If any provision of this Agreement is found invalid or unenforceable, the
+remaining provisions shall remain effective.
+
+
+==================================================
+19. ENTIRE AGREEMENT
+==================================================
+
+This Agreement represents the complete understanding regarding the use of
+the Software and replaces any previous informal permissions or statements.
+
+
+==================================================
+20. FINAL NOTICE
+==================================================
+
+ALL RIGHTS RESERVED.
+
+Unauthorized use, copying, modification, publication, distribution,
+commercial exploitation, or reproduction of this Software is strictly
+prohibited.
+
+Copyright (c) 2026 Andrzej.

@@ -24,6 +24,7 @@ import { CompanyAds } from '@/components/company/management/CompanyAds';
 import { CompanyStatistics } from '@/components/company/dashboard/CompanyStatistics';
 import { CompanySettings } from '@/components/company/settings/CompanySettings';
 import { getCompanyStatistics } from '@/lib/AnalyticsEngine';
+import styles from './CompanyDashboard.module.css';
 
 type CompanyTab = 
   | 'stats' 
@@ -446,7 +447,7 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:flex-row font-sans text-slate-900 dark:text-slate-100">
+    <div className={`${styles.dashboard} min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col lg:flex-row font-sans text-slate-900 dark:text-slate-100`}>
       <Sidebar
         title={company?.companyName || 'Moja Firma'}
         subtitle={company?.city || user?.email || ''}
@@ -628,3 +629,5 @@ export function CompanyDashboard({ onNavigate }: CompanyDashboardProps) {
     </div>
   );
 }
+
+export default React.memo(CompanyDashboard);

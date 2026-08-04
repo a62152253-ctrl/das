@@ -1,6 +1,6 @@
 import { Company, Booking, Service } from '@/types';
 import { getFirebaseDb } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc, getDocs, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { getFirebaseModules } from '@/lib/LazyFirebase';
 import { createNotification } from '@/lib/NotificationEngine';
 
 // Time utility functions
@@ -115,7 +115,8 @@ export function generateAvailableSlots(
 export async function createBooking(bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
   const db = getFirebaseDb();
   const now = new Date().toISOString();
-  const docRef = await addDoc(collection(db, 'bookings'), {
+  const fb = await getFirebaseModules();
+  const docRef = await fb.addDoc(fb.collection(db, 'bookings'), {
     ...bookingData,
     createdAt: now,
     updatedAt: now
@@ -142,8 +143,9 @@ export async function updateBookingStatus(
   time: string
 ): Promise<void> {
   const db = getFirebaseDb();
-  const ref = doc(db, 'bookings', bookingId);
-  await updateDoc(ref, {
+  const fb = await getFirebaseModules();
+  const ref = fb.doc(db, 'bookings', bookingId);
+  await fb.updateDoc(ref, {
     status: newStatus,
     updatedAt: new Date().toISOString()
   });
@@ -165,12 +167,13 @@ export async function updateBookingStatus(
   });
 }
 
-export function subscribeUserBookings(userId: string, isCompany: boolean, callback: (bookings: Booking[]) => void) {
+export async function subscribeUserBookings(userId: string, isCompany: boolean, callback: (bookings: Booking[]) => void) {
   const db = getFirebaseDb();
+  const fb = await getFirebaseModules();
   const fieldName = isCompany ? 'companyId' : 'clientId';
-  const q = query(collection(db, 'bookings'), where(fieldName, '==', userId));
+  const q = fb.query(fb.collection(db, 'bookings'), fb.where(fieldName, '==', userId));
 
-  return onSnapshot(q, (snapshot) => {
+  return fb.onSnapshot(q, (snapshot) => {
     const list: Booking[] = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()

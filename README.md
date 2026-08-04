@@ -128,9 +128,9 @@ src/
 - **Lucide React** — Icons
 
 ### Backend/Database
-- **Firebase** — Authentication & Database
-- **Firestore** — Real-time database
-- **Cloud Functions** — Serverless logic (opcjonalnie)
+- **MySQL** — Relational database (using mysql2/promise)
+- **Node.js MySQL client** — Database access layer
+- **Server-side logic** — Express routes handling DB operations
 
 ### DevOps
 - **FTP Deploy** — Automatyczne wdrażanie

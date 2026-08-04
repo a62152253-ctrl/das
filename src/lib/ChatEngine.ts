@@ -1,17 +1,5 @@
 import { getFirebaseDb } from '@/lib/firebase';
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  doc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy, 
-  onSnapshot, 
-  setDoc, 
-  getDoc 
-} from 'firebase/firestore';
+import { getFirebaseModules } from '@/lib/LazyFirebase';
 import { Conversation, Message } from '@/types';
 import { createNotification } from '@/lib/NotificationEngine';
 
@@ -27,12 +15,13 @@ export async function getOrCreateConversation(
 ): Promise<string> {
   const db = getFirebaseDb();
   const convId = getConversationId(userId1, userId2);
-  const convRef = doc(db, 'conversations', convId);
+  const fb = await getFirebaseModules();
+  const convRef = fb.doc(db, 'conversations', convId);
 
-  const snap = await getDoc(convRef);
+  const snap = await fb.getDoc(convRef);
   if (!snap.exists()) {
     const now = new Date().toISOString();
-    await setDoc(convRef, {
+    await fb.setDoc(convRef, {
       id: convId,
       participants: [userId1, userId2],
       participantNames: {
@@ -64,7 +53,8 @@ export async function sendChatMessage(
   const now = new Date().toISOString();
 
   // Add message document to subcollection or root collection 'messages'
-  const messageRef = await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
+  const fb = await getFirebaseModules();
+  const messageRef = await fb.addDoc(fb.collection(db, 'conversations', conversationId, 'messages'), {
     conversationId,
     senderId,
     receiverId,
@@ -76,8 +66,8 @@ export async function sendChatMessage(
   });
 
   // Update conversation last message & unread counter
-  const convRef = doc(db, 'conversations', conversationId);
-  const convSnap = await getDoc(convRef);
+  const convRef = fb.doc(db, 'conversations', conversationId);
+  const convSnap = await fb.getDoc(convRef);
   let currentUnread = 0;
 
   if (convSnap.exists()) {
@@ -85,7 +75,7 @@ export async function sendChatMessage(
     currentUnread = (data.unreadCount && data.unreadCount[receiverId]) || 0;
   }
 
-  await updateDoc(convRef, {
+  await fb.updateDoc(convRef, {
     lastMessage: imageUrl ? '📷 [Zdjęcie]' : content,
     lastMessageTimestamp: now,
     updatedAt: now,

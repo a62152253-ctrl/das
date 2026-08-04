@@ -1,128 +1,530 @@
--- PostgreSQL Schema for Reputation System
--- Run this to initialize database if auto-init doesn't work
+-- ============================================================
+-- Enterprise Reputation + Location System PostgreSQL Schema
+-- ============================================================
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
--- Users table
+
+-- ============================================================
+-- USERS
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email VARCHAR(255) UNIQUE NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW(),
-  email_verified BOOLEAN DEFAULT FALSE,
-  phone_verified BOOLEAN DEFAULT FALSE,
-  trust_score INT DEFAULT 0 CHECK (trust_score >= 0 AND trust_score <= 100),
-  reputation VARCHAR(50) DEFAULT 'MONITORED',
-  total_violations INT DEFAULT 0,
-  total_appeals INT DEFAULT 0,
-  last_activity TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW()
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    email VARCHAR(255)
+        UNIQUE NOT NULL,
+
+    password_hash TEXT,
+
+    name VARCHAR(255),
+
+    role VARCHAR(30)
+        DEFAULT 'client'
+        CHECK(role IN ('client','firma','admin')),
+
+
+    status VARCHAR(30)
+        DEFAULT 'active'
+        CHECK(status IN ('active','blocked','suspended')),
+
+
+    trust_score INT
+        DEFAULT 50
+        CHECK(trust_score BETWEEN 0 AND 100),
+
+
+    reputation VARCHAR(50)
+        DEFAULT 'MONITORED',
+
+
+    total_violations INT
+        DEFAULT 0,
+
+
+    total_appeals INT
+        DEFAULT 0,
+
+
+    email_verified BOOLEAN
+        DEFAULT FALSE,
+
+
+    phone_verified BOOLEAN
+        DEFAULT FALSE,
+
+
+    last_activity TIMESTAMP
+        DEFAULT NOW(),
+
+
+
+    -- LOCATION CONSENT SYSTEM
+
+    location_consent BOOLEAN
+        NOT NULL DEFAULT FALSE,
+
+
+    last_known_lat DOUBLE PRECISION
+        CHECK(
+            last_known_lat BETWEEN -90 AND 90
+            OR last_known_lat IS NULL
+        ),
+
+
+    last_known_lng DOUBLE PRECISION
+        CHECK(
+            last_known_lng BETWEEN -180 AND 180
+            OR last_known_lng IS NULL
+        ),
+
+
+    location_accuracy DOUBLE PRECISION,
+
+
+    location_updated_at TIMESTAMP,
+
+
+    created_at TIMESTAMP
+        DEFAULT NOW(),
+
+
+    updated_at TIMESTAMP
+        DEFAULT NOW()
+
 );
 
--- Violations table
+
+
+-- ============================================================
+-- COMPANIES
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS companies (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+
+    owner_id UUID
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+
+    company_name VARCHAR(255)
+        NOT NULL,
+
+
+    nip VARCHAR(30),
+
+
+    description TEXT,
+
+
+    address TEXT,
+
+
+    city VARCHAR(100),
+
+
+    phone VARCHAR(50),
+
+
+    email VARCHAR(255),
+
+
+    website VARCHAR(255),
+
+
+
+    visibility_package VARCHAR(30)
+        DEFAULT 'free'
+        CHECK(
+            visibility_package IN
+            ('free','silver','gold','platinum')
+        ),
+
+
+
+    rating_avg DECIMAL(3,2)
+        DEFAULT 5.00,
+
+
+    reviews_count INT
+        DEFAULT 0,
+
+
+    views_count INT
+        DEFAULT 0,
+
+
+
+    -- LOCATION
+
+    location_consent BOOLEAN
+        DEFAULT FALSE,
+
+
+    last_known_lat DOUBLE PRECISION
+        CHECK(
+            last_known_lat BETWEEN -90 AND 90
+            OR last_known_lat IS NULL
+        ),
+
+
+    last_known_lng DOUBLE PRECISION
+        CHECK(
+            last_known_lng BETWEEN -180 AND 180
+            OR last_known_lng IS NULL
+        ),
+
+
+    location_updated_at TIMESTAMP,
+
+
+    created_at TIMESTAMP
+        DEFAULT NOW(),
+
+
+    updated_at TIMESTAMP
+        DEFAULT NOW()
+
+);
+
+
+
+-- ============================================================
+-- LOCATION CONSENT HISTORY
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS location_consent_logs (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+
+    user_id UUID
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+
+    company_id UUID
+        REFERENCES companies(id)
+        ON DELETE CASCADE,
+
+
+    consent BOOLEAN
+        NOT NULL,
+
+
+    latitude DOUBLE PRECISION,
+
+
+    longitude DOUBLE PRECISION,
+
+
+    accuracy DOUBLE PRECISION,
+
+
+    ip_address VARCHAR(50),
+
+
+    created_at TIMESTAMP
+        DEFAULT NOW()
+
+);
+
+
+
+-- ============================================================
+-- VIOLATIONS
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS violations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  category VARCHAR(50),
-  type VARCHAR(100),
-  points INT DEFAULT 1,
-  severity VARCHAR(20) DEFAULT 'medium',
-  reason TEXT,
-  ip_address VARCHAR(50),
-  created_at TIMESTAMP DEFAULT NOW(),
-  resolved BOOLEAN DEFAULT FALSE,
-  resolved_at TIMESTAMP
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+
+    user_id UUID
+        NOT NULL
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+
+    category VARCHAR(100),
+
+
+    type VARCHAR(100),
+
+
+    severity VARCHAR(30)
+        DEFAULT 'medium',
+
+
+    points INT
+        DEFAULT 1,
+
+
+    reason TEXT,
+
+
+    resolved BOOLEAN
+        DEFAULT FALSE,
+
+
+    created_at TIMESTAMP
+        DEFAULT NOW(),
+
+
+    resolved_at TIMESTAMP
+
 );
 
--- Device fingerprints
-CREATE TABLE IF NOT EXISTS device_fingerprints (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  fingerprint VARCHAR(255) UNIQUE,
-  user_agent TEXT,
-  ip_address VARCHAR(50),
-  browser VARCHAR(100),
-  os VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW(),
-  last_seen TIMESTAMP DEFAULT NOW(),
-  other_users_count INT DEFAULT 0
-);
 
--- Trust score history/log
-CREATE TABLE IF NOT EXISTS trust_score_log (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  old_score INT,
-  new_score INT,
-  reason VARCHAR(100),
-  created_at TIMESTAMP DEFAULT NOW()
-);
 
--- Appeals table
+-- ============================================================
+-- APPEALS
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS appeals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  reason TEXT NOT NULL,
-  status VARCHAR(50) DEFAULT 'PENDING',
-  created_at TIMESTAMP DEFAULT NOW(),
-  resolved_at TIMESTAMP,
-  resolution TEXT
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+
+    user_id UUID
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+
+    reason TEXT NOT NULL,
+
+
+    status VARCHAR(30)
+        DEFAULT 'PENDING',
+
+
+    resolution TEXT,
+
+
+    created_at TIMESTAMP
+        DEFAULT NOW(),
+
+
+    resolved_at TIMESTAMP
+
 );
 
--- User behavior tracking
-CREATE TABLE IF NOT EXISTS user_behavior (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  messages_last_hour INT DEFAULT 0,
-  messages_last_day INT DEFAULT 0,
-  links_last_hour INT DEFAULT 0,
-  listings_last_day INT DEFAULT 0,
-  updated_at TIMESTAMP DEFAULT NOW()
+
+
+-- ============================================================
+-- DEVICE SECURITY
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS device_fingerprints (
+
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+
+    user_id UUID
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+
+    fingerprint VARCHAR(255)
+        UNIQUE,
+
+
+    user_agent TEXT,
+
+
+    ip_address VARCHAR(50),
+
+
+    browser VARCHAR(100),
+
+
+    os VARCHAR(100),
+
+
+    last_seen TIMESTAMP
+        DEFAULT NOW(),
+
+
+    created_at TIMESTAMP
+        DEFAULT NOW()
+
 );
 
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_reputation ON users(reputation);
-CREATE INDEX IF NOT EXISTS idx_users_trust_score ON users(trust_score);
 
-CREATE INDEX IF NOT EXISTS idx_violations_user_id ON violations(user_id);
-CREATE INDEX IF NOT EXISTS idx_violations_created_at ON violations(created_at);
-CREATE INDEX IF NOT EXISTS idx_violations_category ON violations(category);
 
-CREATE INDEX IF NOT EXISTS idx_device_fingerprints_fingerprint ON device_fingerprints(fingerprint);
-CREATE INDEX IF NOT EXISTS idx_device_fingerprints_user_id ON device_fingerprints(user_id);
+-- ============================================================
+-- TRUST HISTORY
+-- ============================================================
 
-CREATE INDEX IF NOT EXISTS idx_appeals_user_id ON appeals(user_id);
-CREATE INDEX IF NOT EXISTS idx_appeals_status ON appeals(status);
+CREATE TABLE IF NOT EXISTS trust_score_history (
 
-CREATE INDEX IF NOT EXISTS idx_trust_score_log_user_id ON trust_score_log(user_id);
-CREATE INDEX IF NOT EXISTS idx_trust_score_log_created_at ON trust_score_log(created_at);
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-CREATE INDEX IF NOT EXISTS idx_user_behavior_user_id ON user_behavior(user_id);
 
--- View: Recent violations with user info
-CREATE OR REPLACE VIEW recent_violations AS
-SELECT 
-  u.id,
-  u.email,
-  u.reputation,
-  u.trust_score,
-  COUNT(v.id) as violations_30d,
-  MAX(v.created_at) as last_violation
+    user_id UUID
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+
+    old_score INT,
+
+
+    new_score INT,
+
+
+    reason TEXT,
+
+
+    created_at TIMESTAMP
+        DEFAULT NOW()
+
+);
+
+
+
+-- ============================================================
+-- INDEXES
+-- ============================================================
+
+
+CREATE INDEX IF NOT EXISTS idx_users_email
+ON users(email);
+
+
+CREATE INDEX IF NOT EXISTS idx_users_reputation
+ON users(reputation);
+
+
+CREATE INDEX IF NOT EXISTS idx_users_location
+ON users(
+    location_consent,
+    last_known_lat,
+    last_known_lng
+);
+
+
+
+CREATE INDEX IF NOT EXISTS idx_company_location
+ON companies(
+    location_consent,
+    last_known_lat,
+    last_known_lng
+);
+
+
+
+CREATE INDEX IF NOT EXISTS idx_company_city
+ON companies(city);
+
+
+
+CREATE INDEX IF NOT EXISTS idx_violations_user
+ON violations(user_id);
+
+
+
+CREATE INDEX IF NOT EXISTS idx_device_fingerprint
+ON device_fingerprints(fingerprint);
+
+
+
+CREATE INDEX IF NOT EXISTS idx_location_logs_user
+ON location_consent_logs(user_id);
+
+
+
+-- ============================================================
+-- UPDATED_AT TRIGGER
+-- ============================================================
+
+
+CREATE OR REPLACE FUNCTION update_modified_time()
+RETURNS TRIGGER AS $$
+
+BEGIN
+
+NEW.updated_at = NOW();
+
+RETURN NEW;
+
+END;
+
+$$ LANGUAGE plpgsql;
+
+
+
+CREATE TRIGGER users_updated_at_trigger
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_time();
+
+
+
+CREATE TRIGGER companies_updated_at_trigger
+BEFORE UPDATE ON companies
+FOR EACH ROW
+EXECUTE FUNCTION update_modified_time();
+
+
+
+-- ============================================================
+-- VIEWS
+-- ============================================================
+
+
+CREATE OR REPLACE VIEW reputation_overview AS
+
+SELECT
+
+u.id,
+
+u.email,
+
+u.reputation,
+
+u.trust_score,
+
+COUNT(v.id) AS violations
+
 FROM users u
-LEFT JOIN violations v ON u.id = v.user_id 
-  AND v.created_at > NOW() - INTERVAL '30 days'
-GROUP BY u.id, u.email, u.reputation, u.trust_score
-ORDER BY violations_30d DESC;
 
--- View: Multi-account suspects
-CREATE OR REPLACE VIEW multi_account_suspects AS
-SELECT 
-  df.fingerprint,
-  COUNT(DISTINCT df.user_id) as account_count,
-  STRING_AGG(u.email::text, ', ') as emails,
-  MAX(df.last_seen) as last_seen
-FROM device_fingerprints df
-JOIN users u ON df.user_id = u.id
-GROUP BY df.fingerprint
-HAVING COUNT(DISTINCT df.user_id) > 1
-ORDER BY account_count DESC;
+LEFT JOIN violations v
+ON v.user_id = u.id
+
+GROUP BY
+u.id,
+u.email,
+u.reputation,
+u.trust_score;
+
+
+
+CREATE OR REPLACE VIEW nearby_enabled_companies AS
+
+SELECT
+
+id,
+
+company_name,
+
+city,
+
+last_known_lat,
+
+last_known_lng,
+
+rating_avg
+
+FROM companies
+
+WHERE location_consent = TRUE;
+
+
+
+-- ============================================================
+-- FINISHED
+-- ============================================================

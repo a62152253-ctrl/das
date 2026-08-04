@@ -84,7 +84,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         'bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl': 
           variant === 'default',
         'hover:border-neutral-300 dark:hover:border-neutral-600': 
-          variant === 'default' && !disabled && !hasError,
+          (variant === 'default' || variant === 'underlined') && !disabled && !hasError,
           
         // Filled variant
         'bg-neutral-50 dark:bg-neutral-800 border border-transparent rounded-xl': 
@@ -94,9 +94,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           
         // Underlined variant
         'bg-transparent border-0 border-b-2 border-neutral-200 dark:border-neutral-700 rounded-none': 
-          variant === 'underlined',
-        'hover:border-neutral-300 dark:hover:border-neutral-600': 
-          variant === 'underlined' && !disabled && !hasError
+          variant === 'underlined'
       },
       
       // Focus states

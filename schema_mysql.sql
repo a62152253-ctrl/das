@@ -1,11 +1,6 @@
--- ============================================================
--- MySQL 8.0 Enterprise Production Schema for Platform
--- Database: 41958036_fdes
--- ============================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
 
--- 1. USERS TABLE
 CREATE TABLE IF NOT EXISTS users (
   id VARCHAR(128) PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
@@ -28,7 +23,6 @@ CREATE TABLE IF NOT EXISTS users (
   INDEX idx_users_trust_score (trust_score)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 2. COMPANIES TABLE
 CREATE TABLE IF NOT EXISTS companies (
   uid VARCHAR(128) PRIMARY KEY,
   company_name VARCHAR(255) NOT NULL,
@@ -57,7 +51,6 @@ CREATE TABLE IF NOT EXISTS companies (
   INDEX idx_companies_rating (rating_avg)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 3. ADS / OFFERS TABLE
 CREATE TABLE IF NOT EXISTS ads (
   id VARCHAR(128) PRIMARY KEY,
   user_id VARCHAR(128) NOT NULL,
@@ -76,7 +69,6 @@ CREATE TABLE IF NOT EXISTS ads (
   INDEX idx_ads_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 4. PROMOTIONS TABLE
 CREATE TABLE IF NOT EXISTS promotions (
   id VARCHAR(128) PRIMARY KEY,
   company_id VARCHAR(128) NOT NULL,
@@ -89,7 +81,6 @@ CREATE TABLE IF NOT EXISTS promotions (
   INDEX idx_promotions_company (company_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 5. CATEGORIES TABLE
 CREATE TABLE IF NOT EXISTS categories (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) UNIQUE NOT NULL,
@@ -98,7 +89,6 @@ CREATE TABLE IF NOT EXISTS categories (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 6. REVIEWS TABLE
 CREATE TABLE IF NOT EXISTS reviews (
   id VARCHAR(128) PRIMARY KEY,
   company_id VARCHAR(128) NOT NULL,
@@ -113,7 +103,6 @@ CREATE TABLE IF NOT EXISTS reviews (
   INDEX idx_reviews_rating (rating)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 7. REPORTS TABLE
 CREATE TABLE IF NOT EXISTS reports (
   id VARCHAR(128) PRIMARY KEY,
   target_type VARCHAR(50) NOT NULL,
@@ -126,7 +115,6 @@ CREATE TABLE IF NOT EXISTS reports (
   INDEX idx_reports_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. AUDIT LOGS TABLE
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INT AUTO_INCREMENT PRIMARY KEY,
   admin_email VARCHAR(255) NOT NULL,
@@ -139,11 +127,7 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 
 SET FOREIGN_KEY_CHECKS = 1;
 
--- ============================================================
--- VIEWS FOR ANALYTICS AND RANKINGS
--- ============================================================
 
--- View 1: Company Rankings
 CREATE OR REPLACE VIEW vw_company_rankings AS
 SELECT 
   c.uid,
@@ -158,7 +142,6 @@ SELECT
 FROM companies c
 ORDER BY total_rank_score DESC;
 
--- View 2: Suspicious Accounts Radar
 CREATE OR REPLACE VIEW vw_suspicious_accounts AS
 SELECT 
   u.id,
@@ -172,7 +155,6 @@ FROM users u
 WHERE u.trust_score < 60 OR u.violations_count > 0 OR u.status = 'blocked'
 ORDER BY u.trust_score ASC;
 
--- Seed default categories if empty
 INSERT IGNORE INTO categories (name, slug) VALUES 
 ('Uroda i Styl', 'uroda-i-styl'),
 ('Motoryzacja', 'motoryzacja'),

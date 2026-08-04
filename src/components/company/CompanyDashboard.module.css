@@ -1,0 +1,63 @@
+/* CompanyDashboard.module.css */
+:root {
+  --primary-bg: rgba(255, 255, 255, 0.15);
+  --primary-bg-hover: rgba(255, 255, 255, 0.25);
+  --primary-color: #ffffff;
+  --secondary-color: #e0e0e0;
+  --border-radius: 12px;
+  --box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  --backdrop-filter: blur(10px);
+}
+
+.dashboardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background: var(--primary-bg);
+  border-radius: var(--border-radius);
+  box-shadow: var(--box-shadow);
+  backdrop-filter: var(--backdrop-filter);
+  padding: 2rem;
+  color: var(--primary-color);
+}
+
+.header {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.statCard {
+  background: var(--primary-bg);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  text-align: center;
+  transition: background 0.3s ease;
+}
+
+.statCard:hover {
+  background: var(--primary-bg-hover);
+}
+
+.statValue {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.statLabel {
+  font-size: 0.9rem;
+  color: var(--secondary-color);
+}
+
+@media (max-width: 768px) {
+  .dashboardContainer { padding: 1rem; }
+  .header { font-size: 1.5rem; }
+}
